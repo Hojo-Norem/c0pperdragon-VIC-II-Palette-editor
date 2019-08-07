@@ -4,18 +4,18 @@ A C64 based palette editor for [c0pperdragon's] (https://github.com/c0pperdragon
 Palette generator based on the 'colodore' algorithm by pepto
 www.pepto.de/projects/colorvic/
 		
- What's done:
-		Default palette generation based on colodore algorithm
-		Ability to alter brightness, contrast hue and saturation on a global or per colour basis
-		ability to choose between First revision VIC-II lumas (old) and everything else (new)
-		PAL colourmixing calculation...  an approximation but works somewhat
-		ability to apply old VIC-II lumas to colourmix calaulations for new lumas.  Per colour luma channel is averaged without bias. 
-		Upload to device flash
-		Built in test image:
-			This is just a Koala format bitmap.  I would appreciate something a little better, even if it's only a nice border...
+> What's done:
+>		Default palette generation based on colodore algorithm
+>		Ability to alter brightness, contrast hue and saturation on a global or per colour basis
+>		ability to choose between First revision VIC-II lumas (old) and everything else (new)
+>		PAL colourmixing calculation...  an approximation but works somewhat
+>		ability to apply old VIC-II lumas to colourmix calaulations for new lumas.  Per colour luma channel is averaged without bias. 
+>		Upload to device flash
+>		Built in test image:
+>			This is just a Koala format bitmap.  I would appreciate something a little better, even if it's only a nice border...
 		
- What's to do:
-		Save/Load palettes to/from tape/disk
+> What's to do:
+>		Save/Load palettes to/from tape/disk
 		
 ## How to obtain
 
