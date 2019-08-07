@@ -17,6 +17,8 @@ www.pepto.de/projects/colorvic/
 * Save/Load palettes to/from tape/disk
 
 ## Notes on it's use:
+If you use your Video-Enhancement for RGB output, then I'm afraid this is not for you at the moment.  
+
 Through the use of raster interrupts, while you use the editor the palette is being constantly updated so the text is always visible regardless of the palette settings.  That means if you hit your reset button, you may be left with inproberly generated colours.  The only safe place to reset your C64 without saving your palette to FLASH first is on the test images screen.
 
 Secondly, I recommend that you power cycle your C64 after saving a palette to FLASH in order to reset the unlock bit and remove the possibility of other software accidentally writing to the palette registers.  AFAIK, I have not come across any software that does this, *yet*. 
