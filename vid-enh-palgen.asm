@@ -3,7 +3,7 @@
 		******************************************************************
 		*******                                                  *********
 		*******             C64 Viedo  Enhancement               *********
-		*******                                                  *********
+		*******                      v0.9                        *********
 		*******                 Palette Editor                   *********
 		*******                                                  *********
 		******************************************************************
@@ -19,7 +19,8 @@
 		 Palette generator based on the 'colodore' algorithm by pepto
 		 www.pepto.de/projects/colorvic/
 		
-		 What's done:
+		 What's done:	
+						(2019/08/07 - Initial version)
 						Default palette generation based on colodore algorithm
 						Ability to alter brightness, contrast hue and saturation on a global or per colour basis
 						ability to choose between First revision VIC-II lumas (old) and everything else (new)
@@ -28,10 +29,65 @@
 						Upload to device flash
 						Built in test image:
 											This is just a Koala format bitmap.  I would appreciate something a little better, even if it's only a nice border...
+											
+						(2019/12/01 - v0.9)
+						New test image.  At least it has some meaning now...
+						Pepto contacted me a while ago and reccomended that I should be scaling the UV output to better match PbPr output:
+											pb = u / 0.872021 pr = v / 1.229951.  To my eye this has improved the accuracy of the default palette.
+						Save/Load palettes to/from tape/disk:
+											Saved palettes can be re-loaded into the editor for further editing or they can be loaded straight from the
+											BASIC prompt like a normal PRG.  For that to function, do NOT load using LOAD"file",1,1 or LOAD"file",8,1.
+											THe selected luma table, luma mixing mode and video output mode (even if it currently is locked to YPbPr) is also saved.
+											A interrupted load (either through a read error or RUN/STOP) will not corrupt the current palette.
+											The last 4 characters of the standard CBM filename is reserved for the extension ".PAL".  The handling
+											of this extension is automatic.  Loading from disk will automatically display the directory of the selected
+											drive and is filtered to only show files with the .PAL extension.
+											
+											As the the palette file is saved with it's origin memory address, any cartridge based DMA loader that
+											respects load addresses can be used to instantly load the palette into memory.  The 1541 Ultimate II (untested on 
+											original Ultimates or II+) has a 'DMA' option in it's action menu when a PRG file is selected.  Use this when 
+											instructed by the palette editor.
+									
+		 What's to do:						
+						Implement RGB mode:
+							YPbPr / RGsB switch option is coded and is stored with palette during drive I/O.  When a palette is loaded stand-alone the option's state is displayed on screen.
+							This requires an implementation of a component>RGB conversion alorithm... 
+							And colour 0 needs to switched between black level 15 for pbpr and 0 for RB...
+		 
+		 Some info:
+						The mod uses 16 bit entries for its palette.  The editor stores them as seperate low/high byte arrays.
+							
+		 Colour calculation arrays (located at end of code):
+
+							MainPalL	.fill 16	|Temporary palette storage used while palette editor is active
+							MainPalH	.fill 16	|
+							
+							Origin 		.fill 5		FP - Hue origin of currently selected colour
+							Sector		.fill 5		FP - The hue colour wheel is split into 16 'sectors' (360/16).
+							radian		.fill 5		FP - A radian.  The C64 ROMs probably have routines to calculat this.  I'm lazy and did it in VB and stored the result as a text string.  It gest read by a ROM routine into this variable.
+							screen		.fill 5		FP - The 'screen' variable in the colodore algo.  I won't pretend to understand what it there for.  The original algo defines it as 1/5.  Like the radian, I just store it as text '0.2'.
+							bias		.fill 5		FP - Read in from text.  Used to calculate the biased positions of colours for use in odd/even colour mixing. 
 		
-		 What's to do:
-						Save/Load palettes to/from tape/disk
-						
+							Fcontra		.fill 5		FP - Contrast setting of currently selected colour.
+							Fsatura		.fill 5		FP - Saturation setting for the same.
+
+							FPtemp1		.fill 5		FP - Temporary vraiable used during many floating point operations
+							
+							ColCOS		.fill 16*5	FP - Array for holding calculated cosine calculations for each colour
+							ColSIN		.fill 16*5	FP - The same, but for sin calculations.
+
+							ColCOSB		.fill 16*5	FP - Biased version of above
+							ColSINB		.fill 16*5	FP - Biased version of above
+							
+							IOrigin 	.fill 17*5	FP - Array to hold hue origin setting value of each colour
+							IBright		.fill 17	The same for brightness
+							IContra		.fill 17	And Contrast
+							ISatura  	.fill 17	Saturation too.
+
+							FullPalOddL	.fill 256	|Fully calculated palette goes here in seperated low/high byte format.
+							FullPalOddH	.fill 256	|There are technically two palettes.  One is used for odd screen lines
+							FullPalEveL	.fill 256	|and the other for even lines.  This feature of the mod is used to
+							fullPalEveH	.fill 256	|simulate the biasing that occurs in a PAL C64's video output.
 .endc
 		
 		;interface mem loc and write constants
@@ -65,6 +121,10 @@
 		FSUB=47184 			;Subtracts the number in FAC from one stored in RAM (A=Addr.LB, Y=Addr.HB) 
 		FSUBT=47187			;Subtracts the number in FAC from the number in ARG 
 		SIN=57963           ;Performs the SIN function on the number in FAC 
+		
+		FCOMP=48219 		;Compares the number in FAC against one stored in RAM (A=Addr.LB, Y=Addr.HB). The result of the comparison is stored in A: Zero (0) indicates the values were equal.
+							;One (1) indicates FAC was greater than RAM and negative one (-1 or $FF) indicates FAC was less than RAM.
+							;Also sets processor flags (N,Z) depending on whether the number in FAC is zero, positive or negative 
 		
 		;Constants for PETCII control codes
 		c_black=144
@@ -102,8 +162,8 @@
 		SprFF=44
 		
 		;zeropage addr constants
-		Active_Luma=$02		;Currently active luma table
-		Mix_Luma=74			;Luma table to use for colour mixing
+		;Active_Luma=$02		;Currently active luma table (moved to colour table at end of listing so it can be saved)
+		;Mix_Luma=74			;Luma table to use for colour mixing (moved to colour table at end of listing so it will can be saved)
 		Bbright=252			;current brightness
 		brightsign=64		;sign of normalised brightness
 		Nbright=193			;normalised brighness
@@ -133,119 +193,42 @@
 		
 		Sprite_x=24
 		Sprite_y=229
+		SelParam=251
+		
+		ReadOutY=10		;base screen row constant for displaying adjustment values
+		BriX=7			;x position constant of brightness value
+		ConX=19			;same for contrast
+		SatX=31			;and saturation
+		originX=7		;origin too
+		currcolx=25		;dont forget current colour
+		
+		
+		;keyboard scancode constants
+		key_none = 64
+		key_0 = 35
+		key_1 = 56
+		key_8 = 27
+		key_9 = 32
+		key_b = 28
+		key_c = 20
+		key_s = 13
+		key_a = 10
+		key_h = 29
+		key_t = 22
+		key_d = 18
+		key_u = 30
+		key_e = 14
+		key_m = 36
+		key_l = 42
+		key_v = 31
+		key_o = 38
+		key_f = 21
+		key_plus = 40
+		key_minus = 43
 		
 		;Image in koala format for use with the '
 		;test_image="orbital impaler.kla"
-		test_image="testimage.kla"
-
-
-		
-		
-		
-SCRON	.macro
-		lda 53265
-		ora #16
-		and #%01111111
-		sta 53265
-		lda #0
-- 		cmp $d012
-		bne -
-		.endm
-		
-SCROFF  .macro
-		lda 53265
-		and #239
-		and #%01111111
-		sta 53265
-		lda #0
-- 		cmp $d012
-		bne -
-		.endm
-
-FACADDM	.macro address
-		lda #<\address
-		ldy #>\address
-		jsr fadd
-		.endm
-
-FACSUBM	.macro address
-		lda #<\address
-		ldy #>\address
-		jsr fsub
-		.endm
-
-
-FACDIVM .macro address
-		lda #<\address
-		ldy #>\address
-		jsr fdiv
-		.endm
-		
-FACMULM .macro address
-		lda #<\address
-		ldy #>\address
-		jsr fmult
-		.endm
-		
-LDFACB	.macro number
-		ldy #\number
-		lda #0
-		jsr givayf
-		.endm
-
-LDFACW .macro number
-		ldy #<\number
-		lda #>\number
-		jsr givayf
-		.endm
-		
-		
-LDFACM .macro address
-		lda #<\address
-		ldy #>\address
-		jsr movfm
-		.endm
-		
-LDARG .macro address
-		lda #<\address
-		ldy #>\address
-		jsr conupk
-		.endm
-		
-STFACM	.macro address
-		ldx #<\address
-		ldy #>\address
-		jsr movmf
-		.endm
-		
-TXFA	.macro
-		jsr movfa
-		.endm
-
-TXAF	.macro
-		jsr movef
-		.endm
-		
-LDFACT	.macro address
-		lda \address
-		ldx #<\address+1
-		ldy #>\address+1
-		stx $22
-		sty $23
-		jsr strval
-		.endm
-LDFACBM	.macro address
-		ldy \address
-		lda #0
-		jsr givayf
-		.endm		
-		
-PRINTFAC .macro
-		jsr $bddd
-		tax
-		jsr sprint		
-		.endm
-
+		test_image="testimage2.kla"
 
 *       = $0801
         .word (+), 2005  ;pointer, line number
@@ -258,6 +241,7 @@ PalEdit
 	    sta 53280
 		sta 53281
 		sta PreCalced
+		sta outputmode
 		
 		lda #23
 		sta fullcalculation
@@ -314,6 +298,9 @@ PalEdit
 		jsr sprint
 		ldx #<title2
 		ldy #>title2
+		jsr sprint
+		ldx #<title3
+		ldy #>title3
 		jsr sprint
 		#scron
 		lda #unlock
@@ -382,35 +369,13 @@ SkipCalc
 
 		#prints maincon
 		#prints maincon2
+		#printtat footer,#0,#21
 		jsr dispmix
+		jsr dispvid
 		jsr drawselcol
 		jmp drawval
 		
-		SelParam=251
-		
-		ReadOutY=11		;base screen row constant for displaying adjustment values
-		BriX=7			;x position constant of brightness value
-		ConX=19			;same for contrast
-		SatX=31			;and saturation
-		originX=7		;origin too
-		currcolx=25		;dont forget current colour
-		forcemixx=20
-		
-		;keyboard scancode constants
-		key_none = 64
-		key_b = 28
-		key_c = 20
-		key_s = 13
-		key_a = 10
-		key_h = 29
-		key_t = 22
-		key_d = 18
-		key_u = 30
-		key_e = 14
-		key_m = 36
-		key_l = 42
-		key_plus = 40
-		key_minus = 43
+
 		
 
 
@@ -475,7 +440,7 @@ doorigin_p
 menuloop
 		;cli
 		ldy #0
-		clc
+		;clc
 		lda 197
 		cmp #key_none
 		beq menuloop
@@ -484,14 +449,14 @@ menuloop
 		cmp #key_minus
 		beq pressminus
 		cmp #key_b
-		beq paramkey_b
+		beq jparamkey_b
 		cmp #key_c
-		beq paramkey_c
+		beq jparamkey_c
 		cmp #key_s
-		beq paramkey_s
+		beq jparamkey_s
 		cmp #key_h
-		beq paramkey_h
-		cmp #key_u
+		beq jparamkey_h
+		cmp #key_f
 		beq jsavecol
 		cmp #key_t
 		beq jshowtest
@@ -499,9 +464,19 @@ menuloop
 		beq changecurrcol
 		cmp #key_l
 		beq jchangemix
-		
+		cmp #key_a
+		beq savecols
+		cmp #key_o
+		beq loadcol
+		;cmp #key_v
+		;beq togglevid
 		jmp menuloop
 
+savecols
+		jmp saveram
+loadcol
+		jmp loadram
+		
 jchangemix
 		jsr changemix
 		jmp menuloop
@@ -533,6 +508,26 @@ changecurrcol
 		jmp drawval
 
 
+togglevid
+		jsr waitrel
+		lda outputmode
+		eor #255
+		sta outputmode
+		jsr dispvid
+		jmp menuloop
+		
+dispvid
+		lda outputmode
+		bne +
+		#printtat ypbpr,#7,#readouty+6
+		rts
++		#printtat rgsb,#7,#readouty+6
+		rts		
+		
+
+.align 256,00
+sprites
+		.binary "rotate.spr",2
 paramkey_h
 		iny
 paramkey_s
@@ -546,40 +541,32 @@ drawval	lda selparam
 		ldx #1
 		cmp #1
 		bne +
-		ldx #2
+		ldx #3
 +		stx 646
 		#printnat bbright, #brix, #readouty
 		ldx #1
 		lda selparam
 		cmp #2
 		bne +
-		ldx #2
+		ldx #3
 +		stx 646
 		#printnat bcontra, #conx, #readouty
 		ldx #1
 		lda selparam
 		cmp #3
 		bne +
-		ldx #2
+		ldx #3
 +		stx 646
 		#printnat bsatura, #satx, #readouty
 		ldx #1
 		lda selparam
 		cmp #4
 		bne +
-		ldx #2
+		ldx #3
 +		stx 646
 		#ldfacm origin
 		#printfat #originx, #readouty+4
 		jmp menuloop
-		
-
-		
-
-.align 256,00
-sprites
-		.binary "rotate.spr",2
-
 changemix
 		jsr waitrel
 		lda active_luma
@@ -604,9 +591,9 @@ dispmix
 		bne ++
 		lda mix_luma
 		bne +
-		#printtat lumamodenew,#0,#readouty+6
+		#printtat lumamodenew,#0,#readouty+8
 		jmp ++
-+		#printtat lumamodemix,#0,#readouty+6
++		#printtat lumamodemix,#0,#readouty+8
 +		rts
 	
 drawselcol
@@ -1085,11 +1072,22 @@ onwards	sta Active_Luma
 
 PreCalc
 
-		;Make radian FP number from string
 		lda #1
 		sta spren
+		#ldfacb 0
+		#stfacm fpm128
+		#LDFACB 127
+		#STFACM FP127
+		#facsubm fpm128
+		#stfacm fpm128
+		;Make radian FP number from string
 		#ldfact radtxt
 		#STFACM radian
+		;Make PrPb scaling FP constants from string	
+		#ldfact ScalePb
+		#STFACM FPScalePb
+		#ldfact ScalePr
+		#STFACM FPScalePr
 		;Set default values
 		lda #50
 		sta bbright
@@ -1287,33 +1285,34 @@ donebri	sta temp2
 		lda x5tab,y
 costab	ldy #>colcos
 		jsr movfm
-		lda #<fsatura
-		ldy #>fsatura
-		jsr fmult
-		lda #<fcontra
-		ldy #>fcontra
-		jsr fmult
-		;lda #<fp127
-		;ldy #>fp127
-		;jsr fadd
 		
-		.comment
-		#STFACM fptemp1
-		#ldfacb 255
-		lda #<fptemp1
-		ldy #>fptemp1
-		jsr fdiv		
-		lda #<fp31
-		ldy #>fp31
-		jsr fmult
-		.endc
-		jsr facinx
+		;lda #<fsatura
+		;ldy #>fsatura
+		;jsr fmult
+		;lda #<fcontra
+		;ldy #>fcontra
+		;jsr fmult
+		#FACMULM fsatura
+		#FACMULM fcontra
+		#STFACM FPtemp1
+		#LDFACM FPScalePb
+		#FACDIVM FPtemp1
+		
+		lda #<FP127
+		ldy #>FP127
+		jsr FCOMP
+		cmp #1
+		bne +
+		#LDFACM FP127
+		
++		jsr facinx
 		tya
 		clc
 		adc #127
 		lsr
 		lsr
 		lsr
+		
 		
 		sta temp3
 		;sty temp3
@@ -1325,27 +1324,26 @@ costab	ldy #>colcos
 		lda x5tab,y
 sintab	ldy #>colsin
 		jsr movfm
-		lda #<fsatura
-		ldy #>fsatura
-		jsr fmult
-		lda #<fcontra
-		ldy #>fcontra
-		jsr fmult
-		;lda #<fp127
-		;ldy #>fp127
-		;jsr fadd
+		;lda #<fsatura
+		;ldy #>fsatura
+		;jsr fmult
+		;lda #<fcontra
+		;ldy #>fcontra
+		;jsr fmult
+		#FACMULM fsatura
+		#FACMULM fcontra
+		#STFACM FPtemp1
+		#LDFACM FPScalePr
+		#FACDIVM FPtemp1
+
+		lda #<FPm128
+		ldy #>FPm128
+		jsr FCOMP
+		cmp #255
+		bne +
+		#LDFACM FPm128
 		
-		.comment
-		#STFACM fptemp1
-		#ldfacb 255
-		lda #<fptemp1
-		ldy #>fptemp1
-		jsr fdiv		
-		lda #<fp31
-		ldy #>fp31
-		jsr fmult
-		.endc
-		jsr facinx
++		jsr facinx
 		tya
 		clc
 		adc #127
@@ -1353,7 +1351,6 @@ sintab	ldy #>colsin
 		lsr
 		lsr
 		
-
 		sta temp4
 		;ldy temp1
 		;sta vtab,y		
@@ -1591,116 +1588,33 @@ showtest
 		sta full_upload
 		jmp mainscr
 		
-printtop
-	ldx #<top1
-	ldy #>top1
-	jsr sprint
-	rts
-
-VICIRQEN .macro
-		lda #1
-		sta $d01a
-		.endm
-		
-VICIRQDIS .macro
-		lda #0
-		sta $d01a
-		.endm
-	
-printnat .macro number,xcord,ycord
-		ldx \ycord
-		ldy \xcord
-		jsr $e50c
-		ldx \number
-		lda #0
-		jsr $bdcd
-		lda #32
-		jsr $ffd2
-		.endm
-		
-printtat .macro address,xcord,ycord
-		ldx \ycord
-		ldy \xcord
-		jsr $e50c
-		ldx #<\address
-		ldy #>\address
-		jsr sprint
-		lda #32
-		jsr $ffd2
-		.endm
-		
-printfat .macro xcord,ycord
-		ldx \ycord
-		ldy \xcord
-		jsr $e50c
-		#printfac
-		lda #32
-		jsr $ffd2
-		.endm
-
-prints	.macro address
-		ldx #<\address
-		ldy #>\address
-		jsr sprint
-		.endm
-	
-sprint   stx sprint01+1        ;save string pointer LSB
-         sty sprint01+2        ;save string pointer MSB
-         ldy #0                ;starting string index
-
-sprint01 lda $1000,y           ;get a character
-         beq sprint02          ;end of string
-
-         jsr $ffd2             ;print character
-         iny                   ;next
-         bne sprint01
-
-sprint02 rts                   ;exit
-
-
-
-waitkey	
-		clc
-		lda 197
-		cmp #64
-		beq waitkey
-		rts
-		
-waitrel 
-		clc
-		lda 197
-		cmp #64
-		bne waitrel
+setcol 	ldy mainpall,x
+		sty collow
+		ldy mainpalh,x
+		sty colhigh
+		jsr upload
 		rts
 
 partial	ldx #2
-		ldy mainpall,x
-		sty collow
-		ldy mainpalh,x
-		sty colhigh
-		jsr upload
+		jsr setcol
+		
+		ldx #3
+		jsr setcol
 
 		ldx #13
-		ldy mainpall,x
-		sty collow
-		ldy mainpalh,x
-		sty colhigh
-		jsr upload
+		jsr setcol
 
 		ldx #15
-		ldy mainpall,x
-		sty collow
-		ldy mainpalh,x
-		sty colhigh
-		jsr upload
+		jsr setcol
 		
 		ldx #1
-		ldy mainpall,x
-		sty collow
-		ldy mainpalh,x
-		sty colhigh
-		jsr upload
+		jsr setcol
 
+		ldx #14
+		jsr setcol
+
+		ldx #8
+		jsr setcol
 		
 		jmp finirq1
 
@@ -1711,11 +1625,7 @@ IRQ1
 		beq partial
 		bmi finirq1
 		ldx #1
--		ldy mainpall,x
-		sty collow
-		ldy mainpalh,x
-		sty colhigh
-		jsr upload
+-		jsr setcol
 		inx
 		cpx #16
 		bne -
@@ -1750,19 +1660,13 @@ IRQ2
 		bmi finirq2
 
 		ldx #2
+		;stx 53280
 		ldy palred
 		sty collow
 		ldy palred+1
 		sty colhigh
 		jsr upload
-
-		ldx #13
-		ldy PalLtGrn
-		sty collow
-		ldy PalLtGrn+1
-		sty colhigh
-		jsr upload
-
+		
 		ldx #15
 		ldy palgrey3
 		sty collow
@@ -1770,14 +1674,28 @@ IRQ2
 		sty colhigh
 		jsr upload
 
+		;lda #0
+		;sta 53280
+		
+		ldx #3
+		ldy palflash
+		sty collow
+		ldy palflash+1
+		sty colhigh
+		jsr upload
+		
 		ldx #1
 		ldy palwhite
 		sty collow
 		ldy palwhite+1
 		sty colhigh
-		jsr upload	
+		jsr upload
 		
+		jsr othercols
+
+		jsr doflash
 		
+
 finirq2	
 		lda #<IRQ1
 		sta $0314
@@ -1791,36 +1709,759 @@ IRQ1Raster
 		jmp $ea81
 		;jmp $ea31
 
+doflash
+		ldy palflash+2
+		lda palflash+3
+		cmp #63
+		bne goup
+		dey
+		cpy #0
+		bne flshdn
+		sty palflash+3
+		jmp flshdn
 
+goup	ldy palflash+2
+		iny
+		cpy #63
+		bne flshdn
+		sty palflash+3
 
-IRQInit
-		lda #%01111111
+flshdn	sty palflash+2
+		tya 
+		asl
+		and #%01111100
+		sta palflash+1
+		rts
+
+othercols
+		ldx #14
+		ldy palltblue
+		sty collow
+		ldy palltblue+1
+		sty colhigh
+		jsr upload
+		
+		ldx #8
+		ldy palgrey1
+		sty collow
+		ldy palgrey1+1
+		sty colhigh
+		jsr upload
+		
+		ldx #13
+		ldy PalLtGrn
+		sty collow
+		ldy PalLtGrn+1
+		sty colhigh
+		jsr upload
+		rts
+		
+IRQRest .byte 0,0
+
+ResetIRQ
+		sei
+		lda irqrest
+		sta $0314
+		lda irqrest+1
+		sta $0315
+		#vicirqdis
+		lda #$81
 		sta $dc0d
-		and $d011
-		sta $d011
-		lda #255
-		sta $d012
+		cli
+		rts
+		
+SetIRQ  sei
+		lda #$7f
+		sta $dc0d
+		lda $0314
+		sta IRQRest
+		lda $0315
+		sta IRQRest+1
 		lda #<IRQ1
 		sta $0314
 		lda #>IRQ1
 		sta $0315
-		lda #%00000001
-		sta $d01a
+		#vicirqen
+		cli
+		rts
+IRQInit
+
+		and $d011
+		sta $d011
+		lda #255
+		sta $d012
+		jsr setirq
+		;lda #%00000001
+		;sta $d01a
 		rts
 
+		
+INPUT_Y
+		.byte $00
+
+GOTINPUT
+		.text "            .pal",0
+		
+seldevice
+		.byte 0
+		
 saveram
+		jsr prepls
+
+		jsr getdrive
+		ldy seldevice
+		cpy #0
+		bne +
+
+		jsr SetIRQ
+		jmp mainscr
+		
++		#prints fntxt
+		jsr filtered_text
+		lda #64
+		sta FullPalOddL-1
+		jsr fullcalc
+		lda #13
+		jsr $ffd2
+		lda seldevice
+		cmp #1
+		beq +
+		#prints dsave
+		jmp ++
++		#prints tapetxt
+		jsr waitkey
+		jsr waitrel		
+		
++       ;LDA input_y
+		lda #16
+        LDX #<gotinput
+        LDY #>gotinput
+        JSR $FFBD     ; call SETNAM
+        LDA #$00
+;       LDX $BA       ; last used device number
+;       BNE +
+        LDX seldevice      ; default to device 8
++	    LDY #$00
+        JSR $FFBA     ; call SETLFS
+
+        LDA #<uploader
+        STA temp1
+        LDA #>uploader
+        STA temp2
+
+        LDX #<endoftheshow
+        LDY #>endoftheshow
+        LDA #temp1      ; start address located in $C1/$C2
+        JSR $FFD8     ; call SAVE
+        BCS +		    ; if carry set, a load error has happened
+        jmp ++
++
+        ; Akkumulator contains BASIC error code
+		jsr printerr
+		;jsr $ffe7
+        ;#prints dertxt
+		
+		jsr waitrel
+		jsr waitkey
+		jsr waitrel
+        
++		
+		jsr $ffe7
+		jsr SetIRQ
+		jmp mainscr	
+
+jfixpal jmp fixpal
+jlerror jmp lerror
+
+loadram
+		jsr prepls
+		#prints dmatxt
+		jsr getdrive
+		ldy FullPalOddL-1
+		cpy #255
+		bne jfixpal
+		ldy seldevice
+		cpy #0
+		bne +
+
+nofile	jsr SetIRQ
+		jmp mainscr
+		
+		;lda seldevice
++		cpy #1
+		beq ldtape
+		lda #255
+		sta errno
+		jsr displaydir
+		lda errno
+		cmp #255
+		bne jlerror
+		lda filesfound
+		bne +
+		#prints nofiles
+		#prints paktxt
+		jsr waitkey
+		jsr waitrel
+		jmp nofile
++		#prints found1
+		#printn	filesfound
+		#prints found2
+		#prints fntxt
+		jsr filtered_text
+		lda #13
+		jsr $ffd2
+		#prints dload
+		jmp +
+ldtape	#prints tapetxt
+		lda #0
+		sta input_y
+		jsr waitkey
+		jsr waitrel		
+		
++       LDA input_y
+		;lda #16
+        LDX #<gotinput
+        LDY #>gotinput
+        JSR $FFBD     ; call SETNAM
+        LDA #$00
+;       LDX $BA       ; last used device number
+;       BNE +
+        LDX seldevice      ; default to device 8
++	    LDY #$00
+        JSR $FFBA     ; call SETLFS
+
+
+        LDX #<(endoftheshow+1);uploader
+        LDY #>(endoftheshow+1);uploader
+        LDA #0
+        JSR $FFD5     ; call load
+        BCS lerror		    ; if carry set, a load error has happened
+        jmp loaddone
+lerror
+        ; Akkumulator contains BASIC error code
+		jsr printerr
+		jsr $ffe7
+        ;#prints dertxt
+		
+		jsr waitrel
+		jsr waitkey
+		jsr waitrel
+		jsr SetIRQ
+		jmp mainscr	
+        
+loaddone
+		jsr $ffe7
+		ldx #0
+-		lda Load_Block0,x
+		sta IOrigin,x
+		lda Load_Block1,x
+		sta Colcos,x
+		lda Load_Block2,x
+		sta Colsin,x
+		lda Load_Block3,x
+		sta colcosb,x
+		lda Load_Block4,x
+		sta colsinb,x
+		inx
+		bne -
+fixpal	ldy #16
+		sty currcol
+		ldx isatura,y
+		stx bsatura
+		ldx icontra,y
+		stx bcontra
+		ldx ibright,y
+		stx bbright
+		lda x5tab,y
+		ldy #>iorigin
+		jsr movfm
+		#stfacm origin
+		jsr norm_bri
+		jsr norm_sat
+		jsr norm_con	
+		jsr SetIRQ
+		jmp mainscr	
+
+
+
+getdrive
+		#prints devtxt
+		lda #255
+		sta FullPalOddL-1 
+		ldy #0
+		clc
+-		lda 197
+		cmp #key_none
+		beq -
+		cmp #key_t
+		beq	presstape
+		cmp #key_d
+		beq	pressdisk
+		cmp #key_c
+		beq	presscancel
+		jmp -
+presstape
+		ldy #1
+presscancel
+		sty seldevice
+		rts
+pressdisk
+		
+		#prints devnot
+		ldy #8
+		clc
+-		lda 197
+		cmp #key_none
+		beq -
+		cmp #key_0
+		beq drive10
+		cmp #Key_1
+		beq drive11
+		cmp #key_9
+		beq drive9
+		cmp #key_8
+		beq drive8
+		jmp -
+drive11
+		iny
+drive10
+		iny
+drive9
+		iny
+drive8
+		sty seldevice
+		rts
+		
+		
+prepls
 		lda #c_clear
 		jsr $ffd2
-
+		jsr resetirq
+		ldx #2
+		ldy palred
+		sty collow
+		ldy palred+1
+		sty colhigh
+		jsr upload		
+		ldx #15
+		ldy palgrey3
+		sty collow
+		ldy palgrey3+1
+		sty colhigh
+		jsr upload
+		ldx #1
+		ldy palwhite
+		sty collow
+		ldy palwhite+1
+		sty colhigh
+		jsr upload
+		lda #0
+		sta input_y
+		sty seldevice
+		lda #17
+		sta fullcalculation
+		rts
 
 cancel	jmp mainscr
 		
 
 
+;******* The following snippet was borrowed without shame from codebase64.org ********
+		
+;======================================================================
+;Input a string and store it in GOTINPUT, terminated with a null byte.
+;x:a is a pointer to the allowed list of characters, null-terminated.
+;max # of chars in y returns num of chars entered in y.
+;======================================================================
+
+GETIN = $ffe4
+
+; Example usage
+FILTERED_TEXT
+
+	lda #0 ;clear input buffer - tweak by me
+	sta 198
+	lda #' '
+	ldy #12
+-	dey				;clear string buffer - tweak by me
+	sta gotinput,y
+	bne -
+	
+  lda #>filter
+  ldx #<filter
+  ldy #12
+  ;Drop through
+
+; Main entry
+FILTERED_INPUT
+  sty MAXCHARS
+  stx CHECKALLOWED+1
+  sta CHECKALLOWED+2
+
+  ;Zero characters received.
+  lda #$00
+  sta INPUT_Y
+
+;Wait for a character.
+INPUT_GET
+  jsr GETIN
+  beq INPUT_GET
+
+  sta LASTCHAR
+
+  cmp #$14               ;Delete
+  beq DELETE
+
+  cmp #$0d               ;Return
+  beq INPUT_DONE
+
+  lda input_y    ; move maxchar check here to ignore characters at maxchar - tweak by me
+  cmp maxchars
+  beq input_get
+  
+  ;Check the allowed list of characters.
+  ldx #$00
+CHECKALLOWED
+  lda $FFFF,x           ;Overwritten
+  beq INPUT_GET         ;Reached end of list (0)
+
+  cmp LASTCHAR
+  beq INPUTOK           ;Match found
+
+  ;Not end or match, keep checking
+  inx
+  jmp CHECKALLOWED
+
+INPUTOK
+  lda LASTCHAR          ;Get the char back
+  ldy INPUT_Y
+  sta GOTINPUT,y        ;Add it to string
+  jsr $ffd2             ;Print it
+
+  inc INPUT_Y           ;Next character
+
+  ;End reached?
+  ;lda INPUT_Y        disabled maxchar check here.  Dont want to finixh input on maxchar - tweak by me
+  ;cmp MAXCHARS
+  ;beq INPUT_DONE
+
+  ;Not yet.
+  jmp INPUT_GET
+
+INPUT_DONE
+		ldy #16
+		sty input_y
+		ldx #0
+-  		lda entrytest,x
+		sta gotinput+12,x
+		inx
+		cpx #4
+		bne -
+   ;lda #$00                             ;don't zero terminate.  All filenames are 16 chars long (12+".PAL")
+   ;sta GOTINPUT,y   ;Zero-terminate
+		lda #0 ;clear input buffer
+		sta 198
+   rts
+
+; Delete last character.
+DELETE
+  ;First, check if we're at the beginning.  If so, just exit.
+  lda INPUT_Y
+  bne DELETE_OK
+  jmp INPUT_GET
+
+  ;At least one character entered.
+DELETE_OK
+  ;Move pointer back.
+  dec INPUT_Y
+
+  ;Store a zero over top of last character, just in case no other characters are entered.
+  ldy INPUT_Y
+  lda #' '
+  sta GOTINPUT,y
+
+  ;Print the delete char
+  lda #$14
+  jsr $ffd2
+
+  ;Wait for next char
+  jmp INPUT_GET
+
+
+;=================================================
+;Some example filters
+;=================================================
+
+filter	.text " abcdefghijklmnopqrstuvwxyz1234567890.-+!#$%&()",0
+
+;=================================================
+MAXCHARS
+		.byte $00
+
+LASTCHAR
+		.byte $00
 
 
 		
+;********* Now back to your scheduled insanity *********
 
+printerr
+		sta errno
+		#prints errdrv
+		#printn seldevice
+		lda errno
+		cmp #05
+		beq pdnp
+		cmp #04
+		beq pfnf
+		cmp #$1d
+		beq ple
+		cmp #0
+		beq prs
+		#prints errdef
+		#printn errno
+		lda #13
+		jsr $ffd2
+		lda #13
+		jsr $ffd2
+		#prints paktxt
+		rts
+pdnp	#prints errdnp
+		#prints paktxt
+		rts
+pfnf	#prints errfnf
+		#prints paktxt
+		rts
+ple		#prints errle
+		#prints paktxt
+		rts
+prs		#prints errbrk
+		#prints paktxt
+		rts
+		
+displaydir
+		lda #0
+		sta quotemode
+		sta disktitle
+		sta filesfound
+		lda #c_white
+		jsr $ffd2
+        LDA #1
+        LDX #<dddirname
+        LDY #>dddirname
+        JSR $FFBD      ; call SETNAM
+
+        LDA #$02       ; filenumber 2
+        ;LDX $BA
+        ;BNE ddskip
+        LDX seldevice  
+		LDY #$00       ; secondary address 0 (required for dir reading!)
+        JSR $FFBA      ; call SETLFS
+
+        JSR $FFC0      ; call OPEN (open the directory)
+        BCS dderror     ; quit if OPEN failed
+
+        LDX #$02       ; filenumber 2
+        JSR $FFC6      ; call CHKIN
+
+        LDY #$04       ; skip 4 bytes on the first dir line
+        BNE ddskip2
+ddnext
+        ;LDY #$02       ; skip 2 bytes on all other lines
+		ldy #2
+ddskip2  JSR ddgetbyte    ; get a byte from dir and ignore it
+        DEY
+        BNE ddskip2
+        JSR ddgetbyte    ; get low byte of basic line number
+		JSR ddgetbyte    ; get high byte of basic line number
+ 
+ddchar
+        ;JSR $FFD2      ; call CHROUT (print character)
+        JSR ddgetbyte
+		sta temp1
+		ldx disktitle
+		beq jpdisktitle
+		cmp #34
+		beq jgotquote
+		ldx quotemode
+		beq nextchar
+		sta direntry-1,x
+		inx
+		stx quotemode
+nextchar
+		lda temp1
+		BNE ddchar      ; continue until end of line
+
+nextline
+		lda #0
+		sta quotemode
+		;LDA #$0D
+		;sta disktitle
+        ;JSR $FFD2      ; print RETURN
+        JSR $FFE1      ; RUN/STOP pressed?
+        BNE ddnext      ; no RUN/STOP -> continue
+jpdisktitle
+		jmp pdisktitle
+jgotquote
+		jmp gotquote
+dderror
+        ; Akkumulator contains BASIC error code
+		sta errno
+        ; most likely error:
+        ; A = $05 (DEVICE NOT PRESENT)
+ddexit
+        LDA #$02       ; filenumber 2
+        JSR $FFC3      ; call CLOSE
+
+        JSR $FFCC     ; call CLRCHN
+		;lda #13
+		;jsr $ffd2		
+		lda #13
+		jsr $ffd2
+        RTS
+
+ddgetbyte:
+        JSR $FFB7      ; call READST (read status byte)
+        BNE ddend       ; read error or end of file
+        JMP $FFCF      ; call CHRIN (read byte from directory)
+ddend
+        PLA            ; don't return to dir reading loop
+        PLA
+        JMP ddexit
+
+dddirname:
+        .TEXT "$"      ; filename used to access directory		
+
+filesfound
+		.byte 0
+		
+disktitle
+		.byte 0
+quotemode
+		.byte 0
+clrentry
+		pha
+		ldy #0
+		lda #0
+-		sta direntry+12,y
+		iny
+		cpy #4
+		bne -
+		pla
+		rts
+
+pdisktitle
+		lda temp1
+		bne +
+		LDA #$0D
+		sta disktitle
++		jsr $ffd2
+		jmp nextchar
+gotquote
+		ldx quotemode
+		bne +
+		inx
+		stx quotemode
+		jmp nextchar
++		ldx #0
+		stx quotemode
+		dex
+-		inx
+		lda entrytest,x
+		sta cmptmp
+		lda direntry+12,x
+		cmp cmptmp
+		beq -
+		cpx #4
+		bne dircont
+		lda #13
+		sta direntry+12
+		lda #0
+		sta direntry+13
+		#prints direntry
+		inc filesfound
+dircont	jmp nextchar
+
+
+cmptmp	.byte 0
+
+entrytest
+		.text ".pal",255
+
+direntry
+		.text "1234567890abcdef",0		
+
+jSCRON	lda 53265
+		ora #16
+		and #%01111111
+		sta 53265
+		lda #0
+- 		cmp $d012
+		bne -
+		rts
+		
+jSCROFF lda 53265
+		and #239
+		and #%01111111
+		sta 53265
+		lda #0
+- 		cmp $d012
+		bne -
+		rts
+
+s_printn
+		lda #0
+		jsr $bdcd
+		lda #32
+		jsr $ffd2
+		rts
+
+s_printnat
+		lda #0
+		jsr $bdcd
+		lda #32
+		jsr $ffd2
+		rts
+		
+printtop
+	ldx #<top1
+	ldy #>top1
+	jsr sprint
+	rts
+	
+sprint   stx sprint01+1        ;save string pointer LSB
+         sty sprint01+2        ;save string pointer MSB
+         ldy #0                ;starting string index
+
+sprint01 lda $1000,y           ;get a character
+         beq sprint02          ;end of string
+
+         jsr $ffd2             ;print character
+         iny                   ;next
+         bne sprint01
+
+sprint02 rts                   ;exit
+
+waitkey	
+		lda #0 ;clear input buffer
+		sta 198
+;		clc
+;-		lda 197
+;		cmp #64
+;		beq -
+-		jsr GETIN
+		beq -
+		lda 197
+		rts
+		
+waitrel 
+		clc
+		lda 197
+		cmp #64
+		bne waitrel
+		lda #0 ;clear input buffer 
+		sta 198
+		rts
 		
 radtxt	.ptext "0.0174532925"
 scrtxt 	.ptext "0.2"
@@ -1828,9 +2469,9 @@ biatxt 	.ptext "1.3"
 
 alltxt	.text "All",0
 
-deftxt	.text c_white," Default",0
-forcetxt
-		.text c_white,"Force old",0
+;deftxt	.text c_white," Default",0
+;forcetxt
+;		.text c_white,"Force old",0
 		
 top1 	.text c_clear,c_white,176
 		.fill 37,96
@@ -1842,24 +2483,50 @@ Title1	.text c_lt_green,"       Palette adjustment utility",13,13
 		.text c_yellow,"      Hardware and firmware design",13
 		.text "          *2019*  c0pperdragon",13
 		.text c_grey2,"        github.com/c0pperdragon",13,13
-		.text c_yellow,"          COLODORE algorithm",13
-		.text "             *2017* pepto",13,0
+		.text c_yellow,"           COLODORE algorithm",13
+		.text "              *2017* pepto",13,0
 Title2	.text c_grey2,"    www.pepto.de/projects/colorvic/",13,13
-		.text c_yellow,"            Utility coding",13
-		.text "          *2019*  Hojo Norem",13
-		.text c_black,"           john moore",13,13,13
+		.text c_yellow,"             Utility coding",13
+		.text "           *2019*  Hojo Norem",13
+		.text c_grey2,"         github.com/Hojo-Norem",13,0
+Title3	.text c_black,"           john moore",13,13,13	
 		.text c_white," PLEASE TOGGLE YOUR OUTPUT MODE SWITCH",13
 		.text "  AND THEN PRESS  ANY KEY TO CONTINUE",0
 
 
 lumamodenew
-		.text c_grey3,"       ",c_red,"L",c_grey3,"uma mode: ",c_lt_green,"New",c_white," luma mixing",0
+		.text c_grey3,"     ",c_red,"L",c_grey3,"uma mixing table:  ",c_lt_green,"New",c_white," lumas",0
 lumamodemix
-		.text c_grey3,"       ",c_red,"L",c_grey3,"uma mode: ",c_lt_green,"Old",c_white," luma mixing",0
-		    ;  0123456789012345678901234567890123456789
+		.text c_grey3,"     ",c_red,"L",c_grey3,"uma mixing table:  ",c_lt_green,"Old",c_white," lumas",0
+		
+YPbPr	.text c_orange,"V",c_grey3,"ideo output mode:  ",c_lt_green,"Y",c_lt_blue,"Pb",c_red,"Pr",0
+RGsB	.text c_orange,"V",c_grey3,"ideo output mode:  ",c_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",0
+;YPbPr	.text c_red,"V",c_grey3,"ideo output mode:  ",c_lt_green,"Y",c_lt_blue,"Pb",c_red,"Pr",0
+;RGsB	.text c_red,"V",c_grey3,"ideo output mode:  ",c_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",0		    
+
 locktxt	.text c_white,"Your palette is now stored. Press any",13
 		.text "key to return to the editor or power-",13
 		.text "cycle your C64 to re-lock the palette.",13,0  
+		
+devtxt	.text c_grey3,"Please Select ",c_red,"t",c_grey3,"ape, ",c_red,"d",c_grey3,"isk or ",c_red,"c",c_grey3,"ancel.",13,13,0
+			;  0123456789012345678901234567890123456789
+dmatxt	.text c_grey3,"You can use a cartridge with DMA load",13
+		.text "ability. Use DMA to load a palette and",13
+		.text "then select any option to return.",13,13,0
+devnot	.text c_grey3,"Which drive? (",c_red,"8",c_grey3,",",c_red,"9",c_grey3,",1",c_red,"0",c_grey3,",1",c_red,"1",c_grey3,")",13,13,0
+FNtxt	.text c_grey3,"Enter Filename: ",c_white,0
+DErtxt	.text c_white,"Disk Error!!",0
+DLoad	.text 13,c_grey3,"Loading...",13,13,0
+DSave	.text 13,c_grey3,"Saving...",13,13,0
+			
+Tapetxt .text 13,c_grey3,"Please wind cassette to required",13
+		.text "position and then press any key to",13
+		.text "continue.",13,13,0
+nofiles .text c_grey3,"No palette files found.",13,13,0
+found1	.text c_grey3,"Found ",0
+found2	.text "palette files.",13,13,0
+
+paktxt	.text c_grey3,"Press any key to return.",13,0
 
 .align $2000,00
 bitmap
@@ -1871,16 +2538,16 @@ ChLuma1	.text 13,c_grey3,"Press a key for ",c_red,"N",c_grey3,"ew or ",c_red,"O"
 		.text "Groupings determine luma distribution",13
 		.text "and colour mixing ability.",13,13,13
 	
-		.text c_white,"   NEW LUMAS:",13,c_grey1,0
-ChLuma2	.text "      ",c_revs_on,172,162,187,c_blue,"   ",c_grey1,"   ",c_purple,"   ",c_grey2,"   ",c_lt_red,"   ",c_grey3,"   ",c_yellow,"   ",c_white,"   ",c_revs_off,c_grey1,13
-		.text "      ",161," ",c_revs_on,161,c_blue,"   ",c_grey1,"   ",c_purple,"   ",c_grey2,"   ",c_lt_red,"   ",c_grey3,"   ",c_yellow,"   ",c_white,"   ",c_revs_off,c_grey1,13
-		.text "      ",161," ",c_revs_on,161,c_blue,"   ",c_grey1,"   ",c_purple,"   ",c_grey2,"   ",c_lt_red,"   ",c_grey3,"   ",c_yellow,"   ",c_white,"   ",c_revs_off,c_grey1,13
+		.text c_white,"   NEW LUMAS:",13,c_blue,0
+ChLuma2	.text "      ",c_revs_on,172,162,187,c_blue,"   ",c_grey1,"   ",c_purple,"   ",c_grey2,"   ",c_lt_red,"   ",c_grey3,"   ",c_yellow,"   ",c_white,"   ",c_revs_off,c_blue,13
+		.text "      ",161," ",c_revs_on,161,c_blue,"   ",c_grey1,"   ",c_purple,"   ",c_grey2,"   ",c_lt_red,"   ",c_grey3,"   ",c_yellow,"   ",c_white,"   ",c_revs_off,c_blue,13
+		.text "      ",161," ",c_revs_on,161,c_blue,"   ",c_grey1,"   ",c_purple,"   ",c_grey2,"   ",c_lt_red,"   ",c_grey3,"   ",c_yellow,"   ",c_white,"   ",c_revs_off,c_blue,13
 		.text "      ",c_revs_on,188,c_revs_off,162,c_revs_on,190,c_revs_on,c_blue,"   ",c_grey1,"   ",c_purple,"   ",c_grey2,"   ",c_lt_red,"   ",c_grey3,"   ",c_yellow,"   ",c_white,"   ",c_revs_off,13,13,0
 
-ChLuma3	.text 13,c_white,"   OLD LUMAS:",13,c_grey1
-		.text "      ",c_revs_on,172,162,187,c_blue,"   ","   ",c_green,"   ","   ","   ",c_yellow,"   ","   ",c_white,"   ",c_revs_off,c_grey1,13
-		.text "      ",161," ",c_revs_on,161,c_blue,"   ","   ",c_green,"   ","   ","   ",c_yellow,"   ","   ",c_white,"   ",c_revs_off,c_grey1,13
-		.text "      ",161," ",c_revs_on,161,c_blue,"   ","   ",c_green,"   ","   ","   ",c_yellow,"   ","   ",c_white,"   ",c_revs_off,c_grey1,13
+ChLuma3	.text 13,c_white,"   OLD LUMAS:",13,c_blue
+		.text "      ",c_revs_on,172,162,187,c_blue,"   ","   ",c_green,"   ","   ","   ",c_yellow,"   ","   ",c_white,"   ",c_revs_off,c_blue,13
+		.text "      ",161," ",c_revs_on,161,c_blue,"   ","   ",c_green,"   ","   ","   ",c_yellow,"   ","   ",c_white,"   ",c_revs_off,c_blue,13
+		.text "      ",161," ",c_revs_on,161,c_blue,"   ","   ",c_green,"   ","   ","   ",c_yellow,"   ","   ",c_white,"   ",c_revs_off,c_blue,13
 		.text "      ",c_revs_on,188,c_revs_off,162,c_revs_on,190,c_blue,"   ","   ",c_green,"   ","   ","   ",c_yellow,"   ","   ",c_white,"   ",c_revs_off,13,0
 
 MPal1	.text c_white,c_revs_on,172,162,162,187,c_revs_off," ",c_revs_on,"    ",c_revs_off," ",c_red,c_revs_on,"    ",c_revs_off," ",c_cyan,c_revs_on,"    ",c_revs_off," ",c_purple,c_revs_on,"    ",c_revs_off," ",c_green,c_revs_on,"    ",c_revs_off," ",c_blue,c_revs_on,"    ",c_revs_off," ",c_yellow,c_revs_on,"    ",c_revs_off,13
@@ -1889,7 +2556,7 @@ MPal2	.text c_white,c_revs_on,188,c_revs_off,162,162,c_revs_on,190,c_revs_off," 
 
 		.text c_orange,c_revs_on,"    ",c_revs_off," ",c_brown,c_revs_on,"    ",c_revs_off," ",c_lt_red,c_revs_on,"    ",c_revs_off," ",c_grey1,c_revs_on,"    ",c_revs_off," ",c_grey2,c_revs_on,"    ",c_revs_off," ",c_lt_green,c_revs_on,"    ",c_revs_off," ",c_lt_blue,c_revs_on,"    ",c_revs_off," ",c_grey3,c_revs_on,"    ",c_revs_off,13,0
 MPal3	.text c_orange,c_revs_on," 08 ",c_revs_off," ",c_brown,c_revs_on," 09 ",c_revs_off," ",c_lt_red,c_revs_on," 10 ",c_revs_off," ",c_grey1,c_revs_on," 11 ",c_revs_off," ",c_grey2,c_revs_on," 12 ",c_revs_off," ",c_lt_green,c_revs_on," 13 ",c_revs_off," ",c_lt_blue,c_revs_on," 14 ",c_revs_off," ",c_grey3,c_revs_on," 15 ",c_revs_off,13
-		.text c_orange,c_revs_on,"    ",c_revs_off," ",c_brown,c_revs_on,"    ",c_revs_off," ",c_lt_red,c_revs_on,"    ",c_revs_off," ",c_grey1,c_revs_on,"    ",c_revs_off," ",c_grey2,c_revs_on,"    ",c_revs_off," ",c_lt_green,c_revs_on,"    ",c_revs_off," ",c_lt_blue,c_revs_on,"    ",c_revs_off," ",c_grey3,c_revs_on,"    ",c_revs_off,13,13,13,0		
+		.text c_orange,c_revs_on,"    ",c_revs_off," ",c_brown,c_revs_on,"    ",c_revs_off," ",c_lt_red,c_revs_on,"    ",c_revs_off," ",c_grey1,c_revs_on,"    ",c_revs_off," ",c_grey2,c_revs_on,"    ",c_revs_off," ",c_lt_green,c_revs_on,"    ",c_revs_off," ",c_lt_blue,c_revs_on,"    ",c_revs_off," ",c_grey3,c_revs_on,"    ",c_revs_off,13,13,0		
 
 PreClk	.text c_grey2," Pre-calculating and applying defaults",13,c_up,0
 
@@ -1900,11 +2567,22 @@ maincon	.text "   ",c_red,"B",c_grey3,"rightness   ",c_red,"C",c_grey3,"ontrast 
 		;.text c_white,"         11.25           All",13,0
 		.text 13,0
 maincon2
-		.text 13,13,13
-		;.text "Palette:  ",c_red,"T",c_grey3,"est - S",c_red,"a",c_grey3,"ve to drive - ",c_red,"U",c_grey3,"pload",13,13,13
-		.text "Palette:  ",c_red,"T",c_grey3,"est - ",c_red,"U",c_grey3,"pload",13,13,13
-		.text c_grey3,"     Highlighted character selects.",13,13,"         Use ",c_red,"+",c_grey3," and ",c_red,"-",c_grey3," to adjust.",0
+		.text 13,13,13,13,13
+		.text "  Palette: ",c_red,"T",c_grey3,"est - S",c_red,"a",c_grey3,"ve - L",c_red,"o",c_grey3,"ad - ",c_red,"F",c_grey3,"lash",13,13,0
+		;.text "Palette:  ",c_red,"T",c_grey3,"est - ",c_red,"U",c_grey3,"pload",13,13,13,0
+footer	.text c_grey3," "
+		.fill 37,96
+		.text 13,c_grey3,"     Highlighted character selects.",13,13,"         Use ",c_red,"+",c_grey3," and ",c_red,"-",c_grey3," to adjust.",0
+
+
 		
+ScalePb .ptext "0.872021"
+FPScalePb
+		.fill 5
+ScalePr .ptext "1.229951"
+FPScalePr
+		.fill 5
+FP127	.fill 5
 
 
 .align $100,00	
@@ -1927,9 +2605,12 @@ ConLUT	.byte >ConLut00,>ConLut01,>ConLut02,>ConLut03,>ConLut04,>ConLut05,>ConLut
 		.byte >ConLut30,>ConLut31
 	
 PalRed		.byte 30,44	;11, 30, 0        
-PalLtGrn	.byte 226,85	;21, 2, 15
+PalLtGrn	.byte 64,44	;11, 0, 2      01000000   00101100
 PalGrey3	.byte 239,105
+PalGrey1	.byte 239,%00011101
 PalWhite	.byte 239,125
+PalltBlue		.byte 224,47	;11, 0, 30     11100000   00101111 
+PalFlash	.byte 30,44,0,0
 charcol
 		.binary test_image,$1f42
 .align $100
@@ -1971,12 +2652,27 @@ NewMix 	.byte 2,11,3,15,4,8,5,10,6,9,7,13,8,4,9,6,10,5,11,2,12,14,13,7,14,12,15,
 OldMix	.byte 2,6,2,9,2,11,3,7,3,13,3,15,4,5,4,8,4,10,4,12,4,14,5,4,5,8,5,10,5,12,5,14,6,2,6,9,6,11,7,3,7,13
 		.byte 7,15,8,4,8,5,8,10,8,12,8,14,9,2,9,6,9,11,10,4,10,5,10,8,10,12,10,14,11,2,11,6,11,9,12,4,12,5,12
 		.byte 8,12,10,12,14,13,3,13,7,13,15,14,4,14,5,14,8,14,10,14,12,15,3,15,7,15,13,0,0
-;PreAng	.fill 16*5
-.align $100,$64
-uploader
-		.binary "uploader.prg",2
+
+errno	.byte 0
+		
+
+		
+ErrDRV	.text 13,13,c_white,"Device ",0		
+ErrDNP	.text ": Drive not present!",13,13,0
+ErrFNF	.text ": File not found!",13,13,0
+ErrLE	.text ": Load error!",13,13,0
+ErrBrk	.text ": RUN/STOP!",13,13,0
+ErrDef	.text ": Error number ",0
+
+FPM128	.fill 5,0
 
 .align $100,$64
+		.byte 64	;Offset uploader binary due to BASIC load addr being $0801 and not $0800 ^_^
+uploader
+		.binary "uploader.prg",2
+uploader_end
+		
+.align $100,0
 IOrigin 	.fill 17*5
 IBright		.fill 17
 IContra		.fill 17
@@ -1997,7 +2693,13 @@ Fcontra	.fill 5
 Fsatura	.fill 5
 
 FPtemp1	.fill 5
-FPTemp2 .fill 5
+
+OutputMode
+		.fill 1
+Mix_Luma
+		.fill 1
+Active_Luma
+		.fill 1
 .align $100
 ColSIN	.fill 16*5
 .align $100
@@ -2010,6 +2712,177 @@ FullPalOddH	.fill 256
 FullPalEveL	.fill 256
 fullPalEveH	.fill 256
 endoftheshow
-		.fill 2
+		.fill uploader_end-uploader
+.align $100
+Load_Block0
+			.fill 17*5
+			.fill 17
+			.fill 17
+			.fill 17
+
+.align $100
+Load_Block1	.fill 16*5
+			.fill 16
+			.fill 16
+			.fill 5
+			.fill 5
+			.fill 5
+			.fill 5
+			.fill 5
+			.fill 5
+			.fill 5
+			.fill 5
+			.fill 1
+			.fill 1
+			.fill 1
+.align $100
+Load_Block2	.fill 16*5
+.align $100
+Load_Block3	.fill 16*5
+.align $100
+Load_Block4	.fill 16*5
+
+;*********************
+;   Helper Mactros
+;*********************
+VICIRQEN .macro
+		lda #1
+		sta $d01a
+		.endm
+		
+VICIRQDIS .macro
+		lda #0
+		sta $d01a
+		.endm
+	
+printnat .macro number,xcord,ycord
+		ldx \ycord
+		ldy \xcord
+		jsr $e50c
+		ldx \number
+		jsr s_printnat
+		.endm
+		
+printtat .macro address,xcord,ycord
+		ldx \ycord
+		ldy \xcord
+		jsr $e50c
+		ldx #<\address
+		ldy #>\address
+		jsr sprint
+		lda #32
+		jsr $ffd2
+		.endm
+		
+printfat .macro xcord,ycord
+		ldx \ycord
+		ldy \xcord
+		jsr $e50c
+		#printfac
+		lda #32
+		jsr $ffd2
+		.endm
+
+printn .macro number
+
+		ldx \number
+		jsr s_printn
+		.endm	
+	
+prints	.macro address
+		ldx #<\address
+		ldy #>\address
+		jsr sprint
+		.endm
+		
+SCRON	.macro
+		jsr jSCRON
+		.endm
+		
+SCROFF  .macro
+		jsr jSCROFF
+		.endm
+
+FACADDM	.macro address
+		lda #<\address
+		ldy #>\address
+		jsr fadd
+		.endm
+
+FACSUBM	.macro address
+		lda #<\address
+		ldy #>\address
+		jsr fsub
+		.endm
 
 
+FACDIVM .macro address
+		lda #<\address
+		ldy #>\address
+		jsr fdiv
+		.endm
+		
+FACMULM .macro address
+		lda #<\address
+		ldy #>\address
+		jsr fmult
+		.endm
+		
+LDFACB	.macro number
+		ldy #\number
+		lda #0
+		jsr givayf
+		.endm
+
+LDFACW .macro number
+		ldy #<\number
+		lda #>\number
+		jsr givayf
+		.endm
+		
+		
+LDFACM .macro address
+		lda #<\address
+		ldy #>\address
+		jsr movfm
+		.endm
+		
+LDARG .macro address
+		lda #<\address
+		ldy #>\address
+		jsr conupk
+		.endm
+		
+STFACM	.macro address
+		ldx #<\address
+		ldy #>\address
+		jsr movmf
+		.endm
+		
+TXFA	.macro
+		jsr movfa
+		.endm
+
+TXAF	.macro
+		jsr movef
+		.endm
+		
+LDFACT	.macro address
+		lda \address
+		ldx #<\address+1
+		ldy #>\address+1
+		stx $22
+		sty $23
+		jsr strval
+		.endm
+LDFACBM	.macro address
+		ldy \address
+		lda #0
+		jsr givayf
+		.endm		
+		
+PRINTFAC .macro
+		jsr $bddd
+		tax
+		jsr sprint		
+		.endm
