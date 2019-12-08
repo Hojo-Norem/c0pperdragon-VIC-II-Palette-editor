@@ -3,7 +3,7 @@
 		******************************************************************
 		*******                                                  *********
 		*******             C64 Viedo  Enhancement               *********
-		*******                      v0.9                        *********
+		*******                      v0.91                       *********
 		*******                 Palette Editor                   *********
 		*******                                                  *********
 		******************************************************************
@@ -47,6 +47,8 @@
 											respects load addresses can be used to instantly load the palette into memory.  The 1541 Ultimate II (untested on 
 											original Ultimates or II+) has a 'DMA' option in it's action menu when a PRG file is selected.  Use this when 
 											instructed by the palette editor.
+						(2019/12/08 - v0.91)
+						The load menu now automatically recognises when a palette has been DMA loaded.
 									
 		 What's to do:						
 						Implement RGB mode:
@@ -1870,16 +1872,13 @@ saveram
 		jsr SetIRQ
 		jmp mainscr	
 
-jfixpal jmp fixpal
+
 jlerror jmp lerror
 
 loadram
 		jsr prepls
 		#prints dmatxt
 		jsr getdrive
-		ldy FullPalOddL-1
-		cpy #255
-		bne jfixpal
 		ldy seldevice
 		cpy #0
 		bne +
@@ -1982,7 +1981,7 @@ fixpal	ldy #16
 		jsr SetIRQ
 		jmp mainscr	
 
-
+;jfixpal jmp fixpal
 
 getdrive
 		#prints devtxt
@@ -1991,14 +1990,17 @@ getdrive
 		ldy #0
 		clc
 -		lda 197
-		cmp #key_none
-		beq -
+		;cmp #key_none
+		;beq -
 		cmp #key_t
 		beq	presstape
 		cmp #key_d
 		beq	pressdisk
 		cmp #key_c
 		beq	presscancel
+		lda FullPalOddL-1
+		cmp #255
+		bne fixpal
 		jmp -
 presstape
 		ldy #1
@@ -2511,8 +2513,8 @@ locktxt	.text c_white,"Your palette is now stored. Press any",13
 devtxt	.text c_grey3,"Please Select ",c_red,"t",c_grey3,"ape, ",c_red,"d",c_grey3,"isk or ",c_red,"c",c_grey3,"ancel.",13,13,0
 			;  0123456789012345678901234567890123456789
 dmatxt	.text c_grey3,"You can use a cartridge with DMA load",13
-		.text "ability. Use DMA to load a palette and",13
-		.text "then select any option to return.",13,13,0
+		.text "ability here.",13,13,0; Use DMA to load a palette and",13
+		;.text "then select any option to return.",13,13,0
 devnot	.text c_grey3,"Which drive? (",c_red,"8",c_grey3,",",c_red,"9",c_grey3,",1",c_red,"0",c_grey3,",1",c_red,"1",c_grey3,")",13,13,0
 FNtxt	.text c_grey3,"Enter Filename: ",c_white,0
 DErtxt	.text c_white,"Disk Error!!",0
