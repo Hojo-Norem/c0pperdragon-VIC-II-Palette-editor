@@ -3,7 +3,10 @@ A C64 based palette editor for c0pperdragon's (https://github.com/c0pperdragon) 
 		
 Palette generator based on the 'colodore' algorithm by pepto
 www.pepto.de/projects/colorvic/
-		
+
+## What's done in v0.91:
+* Improved loading menu - The load menu now automatically recognises when a palette has been DMA loaded.
+
 ## What's done in v0.9:
 * Default palette generation based on colodore algorithm.
 * Ability to alter brightness, contrast hue and saturation on a global or per colour basis
