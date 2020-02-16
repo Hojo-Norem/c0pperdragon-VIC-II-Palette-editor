@@ -424,7 +424,7 @@ cpyparams
 		sta icontra,y
 		lda bsatura
 		sta isatura,y
-		dex
+		dey
 		bpl -
 		ldy currcol
 		rts
