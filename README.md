@@ -4,6 +4,13 @@ A C64 based palette editor for c0pperdragon's (https://github.com/c0pperdragon) 
 Palette generator based on the 'colodore' algorithm by pepto
 www.pepto.de/projects/colorvic/
 
+## What's done in v1.00
+* RGsB (sync-on-green) output - The editor works in the YUV space internally and is converted to RGB as needed.  **Not tested for effectiveness due to lack of RGsB supporting equipment!  Please report back with results!**
+* Improved colour mixing - Implemented hanover bar generation based on the colodore.com sourcecode.  Hanover bars are only used for the mixed colours.
+* Added firmware default palette from FPGA firmware source.  Also added RGsB conversion of default palette.  Neither palette is editable.
+* Code borrowed from codebase64 and other minor optimisations have made the editor a little more responsive while altering settings.
+* Split sourcecode into modules.
+
 ## What's done in v0.91:
 * Improved loading menu - The load menu now automatically recognises when a palette has been DMA loaded.
 
@@ -19,7 +26,7 @@ www.pepto.de/projects/colorvic/
 * Loading and saving from tape and disk, with a built in directory viewer for disk.  See below for more detail.
 
 ## What's to do:
-* Implement YUV/YPbPr to RGB conversion.  More floating point maths for the 6510 to crunch...
+* Some polishing perhaps, some tweaks to the colourmixing code maybe...
 
 ## Notes on it's use:
 Through the use of raster interrupts, while you use the editor the palette is being constantly updated so the text is always visible regardless of the palette settings.  That means if you hit your reset button, you may be left with improperly generated colours.  The only safe place to reset your C64 without saving your palette to FLASH first is on the test image screen.
