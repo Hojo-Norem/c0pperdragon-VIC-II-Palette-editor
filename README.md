@@ -4,6 +4,9 @@ A C64 based palette editor for c0pperdragon's (https://github.com/c0pperdragon) 
 Palette generator based on the 'colodore' algorithm by pepto
 www.pepto.de/projects/colorvic/
 
+## What's donr in v1.01
+* YUV needs to be scaled to YPbPr for accurate results.  Problem was that for the mixed colours this scaling was being applied __before__ they were being mixed.  This version fixes that and improves the accuracy of the resulting mixed colours.
+
 ## What's done in v1.00
 * RGsB (sync-on-green) output - The editor works in the YUV space internally and is converted to RGB as needed.  **Not tested for effectiveness due to lack of RGsB supporting equipment!  Please report back with results!**
 * Improved colour mixing - Implemented hanover bar generation based on the colodore.com sourcecode.  Hanover bars are only used for the mixed colours.
