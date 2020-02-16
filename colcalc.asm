@@ -115,7 +115,7 @@ sintab	ldy #>colsin
 		#facaddm fptemp1
 		#stfacm fptempv	
 		#cpfp fptemp3, fptempu
-		jmp nohanover
+		jmp noscale
 dohaneven
 		#ldfacm fptempu
 		#facmulm odd_cos
@@ -133,7 +133,14 @@ dohaneven
 		#facaddm fptemp1
 		#stfacm fptempv		
 		#cpfp fptemp2, fptempu
+		jmp noscale
 nohanover
+		jsr scaletoYPbPr
+noscale	ldx temp1
+		rts
+
+
+scaletoYPbPr
 		;do U -> Pb scaling
 		#LDFACM FPScalePb
 		#FACDIVM FPtempU
@@ -149,10 +156,9 @@ nohanover
 		#LDFACM FPScalePr
 		#FACDIVM FPtempV
 		#stfacm FPTempV
-		ldx temp1
 		rts
-
-
+		
+		
 normoutput
 		txa
 		pha
@@ -317,7 +323,8 @@ mixtab2	lda $c000,x
 		sta tempreg
 		jsr getparams		
 		jsr calccol	
-		jsr dodivs		
+		jsr dodivs
+		jsr scaletoYPbPr
 		lda outputmode
 		bne +
 		jsr normoutput
