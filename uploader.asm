@@ -44,14 +44,7 @@
 +		.word 0          ;basic line end	
 		
 uploader
-;		clc
-;		lda FullPalOddL-1
-;		cmp #64
-;		beq +
-;		#prints error
-;		#printn fullpaloddl-1
-;		#prints errorend
-;		rts
+
 		lda #0
 	    sta 53280
 		sta 53281
@@ -64,20 +57,19 @@ uploader
 		#prints mpal2
 		#prints mpal3
 		lda outputmode
-		;cmp #255
 		beq +
 		#prints rgsb
 		jmp ++
 +		#prints ypbpr
 +		#prints prompt
-		;clc
+	
 -		jsr GETIN
 		beq -
-		;clc
+		
 -		lda 197
 		cmp #64
 		bne -
-		;clc
+		
 		ldx #0
 -		lda #selodd
 		sta control
@@ -100,11 +92,11 @@ uploader
 		lda #unlock
 		sta control
 		#prints done
-		;clc
+		
 -		lda 197
 		cmp #64
 		bne -
-		;clc
+		
 -		lda 197
 		cmp #64
 		beq -
@@ -164,39 +156,7 @@ MPal3	.text c_orange,c_revs_on," 08 ",c_revs_off," ",c_brown,c_revs_on," 09 ",c_
 		
 		
 .align $100  ;,$64
-IOrigin 	.fill 17*5
-IBright		.fill 17
-IContra		.fill 17
-ISatura  	.fill 17
-
-.align $100
-ColCOS	.fill 16*5
-MainPalL	.fill 16
-MainPalH	.fill 16
-
-Origin 		.fill 5
-Sector		.fill 5
-radian		.fill 5
-screen		.fill 5
-bias		.fill 5
-	
-Fcontra	.fill 5
-Fsatura	.fill 5
-
-FPtemp1	.fill 5
-OutputMode
-		.fill 1
-.align $100
-ColSIN	.fill 16*5
-.align $100
-ColCOSB	.fill 16*5
-.align $100
-ColSINB	.fill 16*5
-.align $100
-FullPalOddL	.fill 256
-FullPalOddH	.fill 256
-FullPalEveL	.fill 256
-fullPalEveH	.fill 256
+.include "Shared.asm"
 
 printn .macro number
 
