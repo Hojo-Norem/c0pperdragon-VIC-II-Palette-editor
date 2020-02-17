@@ -61,10 +61,10 @@ deftrig	jsr dotrig
 		jsr calccol
 		jsr normoutput
 		jsr preshift
+;		lda colreghigh
+		sta mainpalh,x
 		lda colreglow
 		sta mainpall,x
-		lda colreghigh
-		sta mainpalh,x
 		jsr spinsprite
 		dex
 		bpl deftrig

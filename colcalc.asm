@@ -330,12 +330,12 @@ mixtab2	lda $c000,x
 		jsr normoutput
 		jmp ++
 +		jsr doRGBconv
-+		jsr preshift	
++		jsr preshift
 		ldy tempreg
-		lda colreglow	;store colour into odd scanline palette
-		sta fullpaloddl,y
-		lda colreghigh
+;		lda colreghigh	;store colour into odd scanline palette
 		sta fullpaloddh,y
+		lda colreglow	
+		sta fullpaloddl,y
 		tya
 		ASL  			;swap colour matrix co-ords
         ADC #$80

@@ -147,6 +147,8 @@ fixpal	ldy #16
 		jsr norm_sat
 		jsr norm_con	
 		jsr SetIRQ
+		lda #17
+		sta fullcalculation
 		jmp mainscr	
 
 		

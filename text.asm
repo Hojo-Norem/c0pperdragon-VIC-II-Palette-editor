@@ -52,6 +52,8 @@ menu	.text 13,c_grey3,"   Please select from the following:",13,13
 		.text "             ",c_red,"P",c_grey3,"alette editor",13,13
 		.text " Apply firmware ",c_red,"d",c_grey3,"efault palette (",c_lt_green,"Y",c_lt_blue,"Pb",c_lt_red,"Pr",c_grey3,")",13,13
 		.text " Apply firmware d",c_red,"e",c_grey3,"fault palette (",c_lt_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_grey3,")",13,13,0
+menu2	.text " Apply firmware de",c_red,"f",c_grey3,"ault palette (",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey1,"ns",c_grey3,")",13
+		.text c_grey2,"  (SDTV mode only, sync signal needed)",13,0
 
 		
 stf		.text "      Save palette to flash? (",c_red,"Y",c_grey3,"/",c_red,"N",c_grey3,")",13,0
@@ -78,7 +80,8 @@ lumamodemix
 		.text c_grey3,"     ",c_red,"L",c_grey3,"uma mixing table:  ",c_lt_green,"Old",c_white," lumas",0
 		
 YPbPr	.text c_red,"V",c_grey3,"ideo output mode:  ",c_lt_green,"Y",c_lt_blue,"Pb",c_red,"Pr",0
-RGsB	.text c_red,"V",c_grey3,"ideo output mode:  ",c_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",0		    
+RGsB	.text c_red,"V",c_grey3,"ideo output mode:  ",c_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",0
+RGBns	.text c_red,"V",c_grey3,"ideo output mode:  ",c_red,"R",c_lt_green,"G",c_lt_blue,"B",c_orange,"ns",0	    
 
 locktxt	.text c_white,"Your palette is now stored. Press any",13
 		.text "key to return to the editor or power-",13
@@ -95,7 +98,7 @@ DErtxt	.text c_white,"Disk Error!!",0
 DLoad	.text 13,c_grey3,"Loading...",13,0
 DSave	.text 13,c_grey3,"Saving...",13,0
 			
-Tapetxt .text c_grey3,"Please wind cassette to required",13
+Tapetxt .text 13,c_grey3,"Please wind cassette to required",13
 		.text "position and then press any key to",13
 		.text "continue.",13,13,0
 nofiles .text c_grey3,"No palette files found.",13,13,0

@@ -79,6 +79,12 @@
 						Some code optimizations.  Editor is now more responsive.
 						Split the sourcecode into modules.  Now the insanity is in bytesized chunks.
 						
+						(2020/02/16 - v1.01 & v1.02)
+						YUV needs to be scaled to YPbPr for accurate results: 
+								Problem was that for the mixed colours this scaling was being applied before they were being mixed.
+								This version fixes that and improves the accuracy of the resulting mixed colours.
+						Added RGBns (no sync) videomode.  In this mode the FPGA will not output sync on Y/green and will have to be sourced from the VIC-II's luma.
+						
 		 Some info:
 						The mod uses 16 bit entries for its palette.  The editor stores them as seperate low/high byte arrays.
 							
@@ -158,10 +164,10 @@ PalEdit #scroff
 		sta temp3
 		sta temp4
 		jsr preshift
+;		lda colreghigh
+		sta palgrey3+1	
 		lda colreglow
-		sta palgrey3
-		lda colreghigh
-		sta palgrey3+1		
+		sta palgrey3	
 		jsr printtop
 		#prints title1
 		#prints title2
@@ -182,10 +188,10 @@ enteredit
 		sta temp3
 		sta temp4
 		jsr preshift
+;		lda colreghigh
+		sta mainpalh,x
 		lda colreglow
 		sta mainpall,x
-		lda colreghigh
-		sta mainpalh,x
 		dex
 		bpl -	
 		jsr printtop
@@ -234,24 +240,7 @@ SkipCalc
 		jsr drawselcol
 		jsr drawwhite
 		jmp menuloop
-		
-		
-update_origin
-		ldx currcol
-		cpx #16
-		bne onlyoneo
-		ldx #15
--		jsr dotrig
-		dex
-		bpl -
-		ldy selparam
-		jsr update
-		jmp drawval
-onlyoneo
-		jsr dotrig
-		jsr update
-		jmp drawval
-		
+				
 		
 doorigin_m
 		#ldfacb 1
@@ -379,9 +368,11 @@ changecurrcol
 
 togglevid
 		jsr waitrel
-		lda outputmode
-		eor #255
-		sta outputmode
+		ldx outputmode
+		dex
+		bpl +
+		ldx #2
++		stx outputmode
 		jsr dispvid
 		lda currcol
 		sta oldselcol
@@ -396,11 +387,15 @@ togglevid
 
 		
 dispvid
-		lda outputmode
-		bne +
-		#printtat ypbpr,#7,#readouty+6
+		ldx outputmode
+		beq dcomp
+		dex
+		beq drgsb
+		#printtat rgbns,#7,#readouty+6
+		rts	
+dcomp	#printtat ypbpr,#7,#readouty+6
 		rts
-+		#printtat rgsb,#7,#readouty+6
+drgsb	#printtat rgsb,#7,#readouty+6
 		rts		
 
 		
@@ -452,6 +447,22 @@ changemix
 sprites
 		.binary "rotate.spr",2
 		
+update_origin
+		ldx currcol
+		cpx #16
+		bne onlyoneo
+		ldx #15
+-		jsr dotrig
+		dex
+		bpl -
+		ldy selparam
+		jsr update
+		jmp drawval
+onlyoneo
+		jsr dotrig
+		jsr update
+		jmp drawval
+
 		
 paramkey_h
 		iny
@@ -600,10 +611,11 @@ recalc	ldx currcol
 		beq +
 		jsr doRGBconv
 +		jsr preshift
+		jsr setsync
+;		lda colreghigh
+		sta mainpalh,x
 		lda colreglow
 		sta mainpall,x
-		lda colreghigh
-		sta mainpalh,x
 		dex
 		bpl -
 		lda #1
@@ -615,11 +627,12 @@ onlyone
 		lda outputmode
 		beq +
 		jsr doRGBconv
-+		jsr preshift
++		jsr preshift		;we dont setsync here because colour 0 will never be altered on its own
+;		lda colreghigh
+		sta mainpalh,x
 		lda colreglow
 		sta mainpall,x
-		lda colreghigh
-		sta mainpalh,x
+
 		lda #1
 		sta full_upload
 		rts
@@ -660,6 +673,7 @@ mainmenu
 		#prints mpal2
 		#prints mpal3
 		#prints menu
+		#prints menu2
 		#scron
 mainmenuloop		
 		lda 197
@@ -671,13 +685,12 @@ mainmenuloop
 		beq setforcomp
 		cmp #key_e
 		beq setforrgsb
+		cmp #key_f
+		beq setforrgb
+		
 		jmp mainmenuloop
-		
-		
 jenteredit
 		jmp enteredit
-		
-		
 setforcomp
 		ldx #15
 -		ldy DefaultPaletteYPbPrLo,x
@@ -688,9 +701,17 @@ setforcomp
 		dex
 		bpl -
 		jmp applydefault
-
-
 setforrgsb
+		lda DefaultPaletteRGsBHi
+		and #127
+		sta DefaultPaletteRGsBHi
+		jmp completergb
+setforrgb
+		lda DefaultPaletteRGsBHi
+		ora #128
+		sta DefaultPaletteRGsBHi
+
+completergb
 		ldx #15
 -		ldy DefaultPaletteRGsBLo,x
 		sty collow
@@ -700,6 +721,8 @@ setforrgsb
 		dex
 		bpl -		
 applydefault
+
+
 		#prints stf
 		jsr waitrel
 -		lda 197
@@ -710,8 +733,10 @@ applydefault
 		cmp #39
 		beq pno
 		jmp -
-pyes	lda #save
+pyes
+		lda #save
 		sta control
+		
 pno		#scroff
 		jmp mainmenu
 			

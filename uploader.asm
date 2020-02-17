@@ -56,11 +56,15 @@ uploader
 		#prints mpal1
 		#prints mpal2
 		#prints mpal3
-		lda outputmode
-		beq +
-		#prints rgsb
-		jmp ++
-+		#prints ypbpr
+		ldx outputmode
+		beq comp
+		dex
+		beq jrgsb
+		#prints rgbns
+		jmp +
+jrgsb	#prints rgsb
+		jmp +
+comp	#prints ypbpr
 +		#prints prompt
 	
 -		jsr GETIN
@@ -136,6 +140,8 @@ sprint01 lda $1000,y           ;get a character
 sprint02 rts                   ;exit
 YPbPr	.text c_grey3,"     This is a ",c_lt_green,"Y",c_lt_blue,"Pb",c_red,"Pr",c_grey3," video palette",13,13,0
 RGsB	.text c_grey3,"     This is a ",c_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_grey3," video palette",13,13,0
+RGBns	.text c_grey3,"     This is a ",c_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_grey1,"ns",c_grey3," video palette",13,13,0
+
 prompt	.text c_grey3," Please toggle your mode select switch",13
 		.text "         then press any key...",13,13,0
 done	.text "                Done",13,13
@@ -155,7 +161,7 @@ MPal3	.text c_orange,c_revs_on," 08 ",c_revs_off," ",c_brown,c_revs_on," 09 ",c_
 
 		
 		
-.align $100  ;,$64
+.align $100,255
 .include "Shared.asm"
 
 printn .macro number

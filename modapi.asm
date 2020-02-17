@@ -39,8 +39,20 @@ preshift
 		lsr					;|
 		lsr					;|
 DHB		ora #0				;Logical OR with above (.YYYYYBB)
-		sta colreghigh		;Store to temp high col register
-		rts	
+;		sta colreghigh		;Store to temp high col register
+		rts
+		
+setsync						;setsynx assumes X = colour index and A = hi colour register
+		cpx #0				;are we dealing with colour index 0?
+		bne +				;if not, skip ahead
+		ldy outputmode		;get videomode
+		cpy #2				;is videomode RGBns?
+		bne +				;if no, skip ahead
+;		lda colreghigh
+		ora #128			;If yes, set bit7 (bit15).  This disables sync output.
+;		sta colreghigh		
++		rts
+		
 upload
 		ldy x16tab,x
 		sty colreg
@@ -74,5 +86,8 @@ upload
 		sty colreg
 		iny
 		sty colreg
-		
 		rts
+		
+
+
+
