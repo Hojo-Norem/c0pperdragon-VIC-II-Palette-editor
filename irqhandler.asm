@@ -76,7 +76,7 @@ IRQ2	lda full_upload
 		ldx #3
 		ldy palflash
 		sty collow
-		ldy palflash+1
+		ldy palflash+3
 		sty colhigh
 		jsr upload
 		ldx #1
@@ -99,27 +99,43 @@ IRQ1Raster
 
 
 doflash
-		ldy palflash+2
-		lda palflash+3
-		cmp #63
-		bne goup
-		dey
-		cpy #0
-		bne flshdn
-		sty palflash+3
-		jmp flshdn
-goup	ldy palflash+2
-		iny
-		cpy #63
-		bne flshdn
-		sty palflash+3
-flshdn	sty palflash+2
-		tya 
+		lda palflash+2
+		clc
+flshdir adc #01
+		beq goup
+		cmp #31
+		bne storeflash
+		ldy #-1
+		sty flshdir+1
+		bmi storeflash
+goup	ldy #1
+		sty flshdir+1
+		and #31
+storeflash
+		sta palflash+2
 		asl
-		and #%01111100
-		sta palflash+1
+		asl
+		ora palflash+1
+		sta palflash+3
 		rts
 
+changeGUIPal
+		lda outputmode
+		beq +
+		lda #<guipalrgb
+		ldy #>guipalrgb
+		jmp setgui
++		lda #<guipalcomp
+		ldy #>guipalcomp
+setgui	sta ldgui+1
+		sty ldgui+2
+		ldy #14
+-
+ldgui	lda $c000,y
+		sta guipal,y
+		dey
+		bpl -
+		rts
 		
 othercols
 		ldx #14

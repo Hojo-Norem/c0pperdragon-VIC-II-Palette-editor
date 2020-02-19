@@ -53,7 +53,7 @@ menu	.text 13,c_grey3,"   Please select from the following:",13,13
 		.text " Apply firmware ",c_red,"d",c_grey3,"efault palette (",c_lt_green,"Y",c_lt_blue,"Pb",c_lt_red,"Pr",c_grey3,")",13,13
 		.text " Apply firmware d",c_red,"e",c_grey3,"fault palette (",c_lt_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_grey3,")",13,13,0
 menu2	.text " Apply firmware de",c_red,"f",c_grey3,"ault palette (",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey1,"ns",c_grey3,")",13
-		.text c_grey2,"  (SDTV mode only, sync signal needed)",13,0
+		.text c_grey2,"  (SDTV mode only, sync signal needed)",13,13,0
 
 		
 stf		.text "      Save palette to flash? (",c_red,"Y",c_grey3,"/",c_red,"N",c_grey3,")",13,0

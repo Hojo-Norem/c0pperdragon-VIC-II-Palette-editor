@@ -3,7 +3,7 @@
 		******************************************************************
 		*******                                                  *********
 		*******             C64 Viedo  Enhancement               *********
-		*******                      v1.00                       *********
+		*******                      v1.15                       *********
 		*******                 Palette Editor                   *********
 		*******                                                  *********
 		******************************************************************
@@ -79,11 +79,16 @@
 						Some code optimizations.  Editor is now more responsive.
 						Split the sourcecode into modules.  Now the insanity is in bytesized chunks.
 						
-						(2020/02/16 - v1.01 & v1.02)
+						(2020/02/16 - v1.01 & v1.1)
 						YUV needs to be scaled to YPbPr for accurate results: 
 								Problem was that for the mixed colours this scaling was being applied before they were being mixed.
 								This version fixes that and improves the accuracy of the resulting mixed colours.
 						Added RGBns (no sync) videomode.  In this mode the FPGA will not output sync on Y/green and will have to be sourced from the VIC-II's luma.
+						
+						(2020/02/19 - v1.15)
+						Setting a default palette also sets the corrisponding video mode if the palette editor is chosen afterward.
+						Added RGB GUI palette.  Switched in appropiately on video mode change.
+						I broke the colour mixing routine in the previous version.  Fixed.
 						
 		 Some info:
 						The mod uses 16 bit entries for its palette.  The editor stores them as seperate low/high byte arrays.
@@ -184,9 +189,14 @@ enteredit
 		ldx #15
 -		lda lumas,x
 		sta temp2
-		lda #128
+		ldy outputmode
+		bne +
+		lda #16
++		asl
+		asl
+		asl
 		sta temp3
-		sta temp4
+		sta temp4		
 		jsr preshift
 ;		lda colreghigh
 		sta mainpalh,x
@@ -198,6 +208,7 @@ enteredit
 		#prints chluma1
 		#prints chluma2
 		#prints chluma3
+		jsr changeGUIPal
 		lda #1
 		sta full_upload
 		lda #150
@@ -373,6 +384,7 @@ togglevid
 		bpl +
 		ldx #2
 +		stx outputmode
+		jsr changeGUIPal
 		jsr dispvid
 		lda currcol
 		sta oldselcol
@@ -386,17 +398,21 @@ togglevid
 		jmp menuloop
 
 		
-dispvid
-		ldx outputmode
-		beq dcomp
+update_origin
+		ldx currcol
+		cpx #16
+		bne onlyoneo
+		ldx #15
+-		jsr dotrig
 		dex
-		beq drgsb
-		#printtat rgbns,#7,#readouty+6
-		rts	
-dcomp	#printtat ypbpr,#7,#readouty+6
-		rts
-drgsb	#printtat rgsb,#7,#readouty+6
-		rts		
+		bpl -
+		ldy selparam
+		jsr update
+		jmp drawval
+onlyoneo
+		jsr dotrig
+		jsr update
+		jmp drawval	
 
 		
 cpyparams
@@ -446,22 +462,18 @@ changemix
 .align 256,255
 sprites
 		.binary "rotate.spr",2
-		
-update_origin
-		ldx currcol
-		cpx #16
-		bne onlyoneo
-		ldx #15
--		jsr dotrig
+
+dispvid
+		ldx outputmode
+		beq dcomp
 		dex
-		bpl -
-		ldy selparam
-		jsr update
-		jmp drawval
-onlyoneo
-		jsr dotrig
-		jsr update
-		jmp drawval
+		beq drgsb
+		#printtat rgbns,#7,#readouty+6
+		rts	
+dcomp	#printtat ypbpr,#7,#readouty+6
+		rts
+drgsb	#printtat rgsb,#7,#readouty+6
+		rts			
 
 		
 paramkey_h
@@ -700,18 +712,22 @@ setforcomp
 		jsr upload
 		dex
 		bpl -
+		lda #0
+		sta outputmode
 		jmp applydefault
 setforrgsb
 		lda DefaultPaletteRGsBHi
 		and #127
 		sta DefaultPaletteRGsBHi
+		lda #1
 		jmp completergb
 setforrgb
 		lda DefaultPaletteRGsBHi
 		ora #128
 		sta DefaultPaletteRGsBHi
-
+		lda #2
 completergb
+		sta outputmode
 		ldx #15
 -		ldy DefaultPaletteRGsBLo,x
 		sty collow
@@ -722,7 +738,7 @@ completergb
 		bpl -		
 applydefault
 
-
+		
 		#prints stf
 		jsr waitrel
 -		lda 197

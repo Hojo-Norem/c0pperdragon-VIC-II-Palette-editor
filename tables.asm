@@ -74,13 +74,34 @@ OldMix	.byte 2,6,2,9,2,11,3,7,3,13,3,15,4,5,4,8,4,10,4,12,4,14,5,4,5,8,5,10,5,12
 BriLut	.char -15,-14,-14,-14,-13,-13,-13,-12,-12,-12,-12,-11,-11,-11,-10,-10,-10,-9,-9,-9,-9,-8,-8,-8,-7,-7,-7,-6,-6,-6,-6,-5,-5,-5,-4,-4,-4,-3,-3,-3,-3,-2,-2,-2,-1,-1,-1,0,0,0
 		.char 0,0,0,0,1,1,1,2,2,2,3,3,3,3,4,4,4,5,5,5,6,6,6,6,7,7,7,8,8,8,9,9,9,9,10,10,10,11,11,11,12,12,12,12,13,13,13,14,14,14,15
 		
-PalRed		.byte 30,44	;11, 30, 0        
-PalLtGrn	.byte 64,44	;11, 0, 2      01000000   00101100
-PalGrey3	.byte 239,105
-PalGrey1	.byte 239,%00011101
-PalWhite	.byte 239,125
-PalltBlue		.byte 224,47	;11, 0, 30     11100000   00101111 
-PalFlash	.byte 30,44,0,0
+;GUI palette tables
+;Current palette
+guipal
+PalRed		.byte 255,255        
+PalLtGrn	.byte 255,255	
+PalGrey3	.byte 255,255
+PalGrey1	.byte 255,255
+PalWhite	.byte 255,255
+PalltBlue	.byte 255,255	
+PalFlash	.byte 255,255,0,0
+
+;YPbPr values
+guipalcomp		.byte 30,44	;11, 30, 0        
+				.byte 64,44	;11, 0, 2      01000000   00101100
+				.byte 239,105
+				.byte 239,%00011101
+				.byte 239,125
+				.byte 224,47	;11, 0, 30     11100000   00101111 
+				.byte 16,2,16
+
+;RGB values
+guipalrgb		.byte 31,0	      
+				.byte 0,%01111100	
+				.byte 84,78
+				.byte 10,37
+				.byte 255,127
+				.byte 224,3	
+				.byte 0,0,16
 
 ;Floading point constants
 

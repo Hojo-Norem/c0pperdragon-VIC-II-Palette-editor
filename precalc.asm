@@ -59,8 +59,14 @@ PreCalc
 		ldx #15
 deftrig	jsr dotrig
 		jsr calccol
+		lda outputmode
+		bne +
 		jsr normoutput
+		jmp ++
++		jsr doRGBconv
++		ldx temp1
 		jsr preshift
+		jsr setsync
 ;		lda colreghigh
 		sta mainpalh,x
 		lda colreglow
