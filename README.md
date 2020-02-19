@@ -4,6 +4,11 @@ A C64 based palette editor for c0pperdragon's (https://github.com/c0pperdragon) 
 Palette generator based on the 'colodore' algorithm by pepto
 www.pepto.de/projects/colorvic/
 
+## What's done in v1.15
+* Setting a default palette also sets the corrisponding video mode if the palette editor is chosen afterward.
+* Added RGB GUI palette.  Switched appropiately on video mode change.
+* I broke the colour mixing routine in the previous version.  Fixed.
+
 ## What's done in v1.1
 * Added RGBns (no sync) videomode.  In this mode the FPGA will not output sync on Y/green in SDTV mode and will have to be sourced from the A/V port.
 
@@ -32,7 +37,7 @@ www.pepto.de/projects/colorvic/
 * Loading and saving from tape and disk, with a built in directory viewer for disk.  See below for more detail.
 
 ## What's to do:
-* Some polishing perhaps, some tweaks to the colourmixing code maybe...
+* More polishing perhaps, some tweaks to the colourmixing code maybe.  If I was any good at GFX then I'd do a better test image...
 
 ## Notes on it's use:
 Through the use of raster interrupts, while you use the editor the palette is being constantly updated so the text is always visible regardless of the palette settings.  That means if you hit your reset button, you may be left with improperly generated colours.  The only safe place to reset your C64 without saving your palette to FLASH first is on the test image screen.
