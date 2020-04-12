@@ -4,6 +4,10 @@ A C64 based palette editor for c0pperdragon's (https://github.com/c0pperdragon) 
 Palette generator based on the 'colodore' algorithm by pepto
 www.pepto.de/projects/colorvic/
 
+## What's done in v1.16
+* Small fix / tweak to the colourmix calculations.  Some improvements to accuracy.
+
+It is worth noting that the default palette settings are not perfect by far.  After using them for a while I found that boosting the brightness on Yellow and Lt.Green a visible notch, shifting the hue of yellow and brown a notch and taking brown's saturation down a notch not only made for a more faithful colour reproduction to my eyes (done by quickly flicking between component and S-Video using a Extron DVS 204) but coupled with the above tweaks to the mixing algo the resulting colourmixes seem more faithful.  An example of such a palette will be included with the sources and binary realeases.
 ## What's done in v1.15
 * Setting a default palette also sets the corrisponding video mode if the palette editor is chosen afterward.
 * Added RGB GUI palette.  Switched appropiately on video mode change.
