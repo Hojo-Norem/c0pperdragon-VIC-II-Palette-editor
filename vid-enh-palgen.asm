@@ -3,7 +3,7 @@
 		******************************************************************
 		*******                                                  *********
 		*******             C64 Viedo  Enhancement               *********
-		*******                      v1.15                       *********
+		*******                      v1.16                       *********
 		*******                 Palette Editor                   *********
 		*******                                                  *********
 		******************************************************************
@@ -89,6 +89,13 @@
 						Setting a default palette also sets the corrisponding video mode if the palette editor is chosen afterward.
 						Added RGB GUI palette.  Switched in appropiately on video mode change.
 						I broke the colour mixing routine in the previous version.  Fixed.
+						
+						(2020/04/12 - v1.16)
+						Small fix / tweak to the colourmix calculations.  Some improvements to accuracy.
+						It is worth noting that the default palette settings are not perfect by far.  After using them for a while I found that boosting the brightness on Yellow and Lt.Green a visible notch, shifting the
+						hue of yellow and brown a notch and taking brown's saturation down a notch not only made for a more fatheful colour reproduction to my eyes (done by quickly flicking between component and
+						S-Video using a Extron DVS 204) but coupled with the above tweaks to the mixing algo the resulting colourmixes seem more fatheful.  An example of such a palette will be included with the sources
+						and binary realeases.
 						
 		 Some info:
 						The mod uses 16 bit entries for its palette.  The editor stores them as seperate low/high byte arrays.
@@ -777,7 +784,11 @@ onwards	sta Active_Luma
 		rts
 
 .include "precalc.asm"
+
+;.include "colcalc-bias.asm"
+;.include "colcalc-hanover.asm"
 .include "colcalc.asm"
+
 .include "modapi.asm"
 .include "coltrig.asm"
 .include "irqhandler.asm"

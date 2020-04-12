@@ -117,6 +117,8 @@ sintab	ldy #>colsin
 		#cpfp fptemp3, fptempu
 		jmp noscale
 dohaneven
+		cmp #3
+		beq noscale
 		#ldfacm fptempu
 		#facmulm odd_cos
 		#stfacm fptemp1
@@ -208,6 +210,8 @@ getparams
 		tax
 		rts
 
+;ToDo - third mixing routine:
+;		Using a thrid table, mix all luma equal colours and adjacent luma
 		
 dodivs
 		lda tempy
@@ -294,7 +298,7 @@ fullcalc
 usenew	ldx #0
 		stx tabin
 calcfulltable
-		lda #1
+		lda #3
 		sta hanover
 mixtab1	lda $c000,x
 		bne +
@@ -311,8 +315,8 @@ mixtab1	lda $c000,x
 		sta tempy
 		#cpfp fptempu, fptempu2
 		#cpfp fptempv, fptempv2
-		lda #0			;my personal pref is to mix the odd line hanovers with the even line non-hanovers
-		sta hanover		;will probably change this if I figure out how to tweak the hanover generator	
+		lda #2			
+		sta hanover		
 		ldx tabin
 		inx
 mixtab2	lda $c000,x
