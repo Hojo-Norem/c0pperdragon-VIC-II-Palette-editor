@@ -4,6 +4,14 @@ A C64 based palette editor for c0pperdragon's (https://github.com/c0pperdragon) 
 Palette generator based on the 'colodore' algorithm by pepto
 www.pepto.de/projects/colorvic/
 
+## What's done in v1.17
+* Re-worked the firmware default palette section.
+Now colour mixing is now applied to the firmware default palette.
+* Added a built-in instruction manual
+As user controls are already clearly marked on screen, this manual more explains the quirks of the editor and the FPGA mod in general.
+* Dropped pucrunch from the main build.
+Unless you want to load the editor from tape or disk without a fastloader then there isn't really a need for it in 2020... 
+
 ## What's done in v1.16
 * Small fix / tweak to the colourmix calculations.  Some improvements to accuracy.
 
