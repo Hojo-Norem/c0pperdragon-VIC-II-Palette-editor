@@ -95,7 +95,7 @@ manual5
 		.text "not function correctly.",13,0
 manual6 	  ;0123456789012345678901234567890123456789
 		.text "'",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey1,"ns",c_grey3,"' is ",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey3," video with sync disabled."
-		.text "In this mode the FPGA does add a sync",13
+		.text "In this mode the FPGA doesn't add a sync"
 		.text "signal to the green signal.  In order to"
 		.text "produce an image, sync must be taken",13
 		.text "from the luma or composite video pins on",0
