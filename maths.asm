@@ -134,7 +134,18 @@ cpfp	.macro source, dest
 		dey
 		bpl -
 		.endm
-		
+ustemp	.byte 0
+upscale	tay
+		and #1
+		sta ustemp
+		tya
+		asl
+		ora ustemp
+		asl
+		ora ustemp
+		asl
+		ora ustemp
+		rts		
 ;Fast Floating Point Multiplication - Again borrowed from codebase64 and converted to 64tass
  
 ;ZP

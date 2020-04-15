@@ -2,7 +2,7 @@
 		******************************************************************
 		******************************************************************
 		*******                                                  *********
-		*******             C64 Viedo  Enhancement               *********
+		*******             C64 Video  Enhancement               *********
 		*******                      v1.16                       *********
 		*******                 Palette Editor                   *********
 		*******                                                  *********
@@ -11,7 +11,7 @@
 		
 						          By Hojo Norem
 		
-		 For use with with c0pperdragon's Video Enchancement PCB
+		 For use with with c0pperdragon's Video Enhancement PCB
 		 github.com/c0pperdragon
 		
 		 Assembler used - 64tass
@@ -25,14 +25,14 @@
 						Ability to alter brightness, contrast hue and saturation on a global or per colour basis.
 						ability to choose between First revision VIC-II lumas (old) and everything else (new).
 						PAL colourmixing calculation...  an approximation but works somewhat.
-						ability to apply old VIC-II lumas to colourmix calaulations for new lumas.  Per colour luma channel is averaged without bias. 
+						ability to apply old VIC-II lumas to colourmix calculations for new lumas.  Per colour luma channel is averaged without bias. 
 						Upload to device flash.
 						Built in test image:
 											This is just a Koala format bitmap.  I would appreciate something a little better, even if it's only a nice border...
 											
 						(2019/12/01 - v0.9)
 						New test image.  At least it has some meaning now...
-						Pepto contacted me a while ago and reccomended that I should be scaling the UV output to better match PbPr output:
+						Pepto contacted me a while ago and recommended that I should be scaling the UV output to better match PbPr output:
 											pb = u / 0.872021 pr = v / 1.229951.  To my eye this has improved the accuracy of the default palette.
 											
 						Save/Load palettes to/from tape/disk:
@@ -69,7 +69,7 @@
 									I have no means to actually test RGsB output.  Please report back with your results.
 						
 						Improved colourmixing:
-								Instead of the simple and innacurate UV biasing to generate the odd /even even / odd mixing variants there is a new routine based on the hanover bar generation
+								Instead of the simple and inaccurate UV biasing to generate the odd /even even / odd mixing variants there is a new routine based on the hanover bar generation
 								taken from the colodore.com JS sourcecode (go to colodore.com and view page source in your browser).  Three sets of UV coordinates are generated for each colour:- 'normal',
 								odd line hanover bars and even line hanover bars.  At the moment hanover bars are only used for mixed colours, as the bars are responsible for the differing resulting
 								colours depending on which colour starts on the odd scanline.  The output seem to be close to colodore's, which is close to what I see on my C64 through s-video.  A couple 
@@ -77,7 +77,7 @@
 							
 						Added firmware default pre-generated palette as defined in c0pperdragon's sourcecode and a pre-calculated RGsB version.  These palettes are fixed and uneditable.
 						Some code optimizations.  Editor is now more responsive.
-						Split the sourcecode into modules.  Now the insanity is in bytesized chunks.
+						Split the sourcecode into modules.  Now the insanity is in byte-sized chunks.
 						
 						(2020/02/16 - v1.01 & v1.1)
 						YUV needs to be scaled to YPbPr for accurate results: 
@@ -86,19 +86,24 @@
 						Added RGBns (no sync) videomode.  In this mode the FPGA will not output sync on Y/green and will have to be sourced from the VIC-II's luma.
 						
 						(2020/02/19 - v1.15)
-						Setting a default palette also sets the corrisponding video mode if the palette editor is chosen afterward.
-						Added RGB GUI palette.  Switched in appropiately on video mode change.
+						Setting a default palette also sets the corresponding video mode if the palette editor is chosen afterward.
+						Added RGB GUI palette.  Switched in appropriately on video mode change.
 						I broke the colour mixing routine in the previous version.  Fixed.
 						
 						(2020/04/12 - v1.16)
 						Small fix / tweak to the colourmix calculations.  Some improvements to accuracy.
 						It is worth noting that the default palette settings are not perfect by far.  After using them for a while I found that boosting the brightness on Yellow and Lt.Green a visible notch, shifting the
-						hue of yellow and brown a notch and taking brown's saturation down a notch not only made for a more fatheful colour reproduction to my eyes (done by quickly flicking between component and
-						S-Video using a Extron DVS 204) but coupled with the above tweaks to the mixing algo the resulting colourmixes seem more fatheful.  An example of such a palette will be included with the sources
-						and binary realeases.
+						hue of yellow and brown a notch and taking brown's saturation down a notch not only made for a more faithful colour reproduction to my eyes (done by quickly flicking between component and
+						S-Video using a Extron DVS 204) but coupled with the above tweaks to the mixing algo the resulting colourmixes seem more faithful.  An example of such a palette will be included with the sources
+						and binary releases.
+						
+						(2020/04/15 - v1.17)
+						Re-worked the firmware default palette section.  Now colour mixing is now applied to the firmware default palette.
+						Added a built-in instruction manual of a sort.  As user controls are already clearly marked on screen, this manual more explains the quirks of the editor and the FPGA mod in general.
+						Dropped pucrunch from the main build.  Unless you want to load the editor from tape or disk without a fastloader then there isn't really a need for it in 2020... 
 						
 		 Some info:
-						The mod uses 16 bit entries for its palette.  The editor stores them as seperate low/high byte arrays.
+						The mod uses 16 bit entries for its palette.  The editor stores them as separate low/high byte arrays.
 							
 		 Colour calculation arrays (located at end of code):
 
@@ -107,14 +112,14 @@
 							
 							Origin 		.fill 5		FP - Hue origin of currently selected colour
 							Sector		.fill 5		FP - The hue colour wheel is split into 16 'sectors' (360/16).
-							radian		.fill 5		FP - A radian.  The C64 ROMs probably have routines to calculat this.  I'm lazy and did it in VB and stored the result as a text string.  It gest read by a ROM routine into this variable.
+							radian		.fill 5		FP - A radian.  The C64 ROMs probably have routines to calculate this.  I'm lazy and did it in VB and stored the result as a text string.  It gets read by a ROM routine into this variable.
 							screen		.fill 5		FP - The 'screen' variable in the colodore algo.  I won't pretend to understand what it there for.  The original algo defines it as 1/5.  Like the radian, I just store it as text '0.2'.
 							bias		.fill 5		FP - Read in from text.  Used to calculate the biased positions of colours for use in odd/even colour mixing. 
 		
 							Fcontra		.fill 5		FP - Contrast setting of currently selected colour.
 							Fsatura		.fill 5		FP - Saturation setting for the same.
 
-							FPtemp1		.fill 5		FP - Temporary vraiable used during many floating point operations
+							FPtemp1		.fill 5		FP - Temporary variable used during many floating point operations
 							
 							ColCOS		.fill 16*5	FP - Array for holding calculated cosine calculations for each colour
 							ColSIN		.fill 16*5	FP - The same, but for sin calculations.
@@ -146,6 +151,8 @@
 +		.word 0          ;basic line end		
 		
 PalEdit #scroff
+		jsr initmultables	;initialise the tables for the fast FP multiplication routines
+		jsr hanpre
 		lda #0
 	    sta 53280
 		sta 53281
@@ -353,8 +360,8 @@ jchangemix
 		
 		
 jshowtest
-		jmp showtest
-
+		jsr showtest
+		jmp mainscr
 		
 jparamkey_b
 		jmp paramkey_b
@@ -493,9 +500,10 @@ paramkey_b
 		iny
 		sty selparam
 		jsr waitrel
-		jsr drawwhite		
+		jsr drawwhite
 drawval	ldx #3
 		stx 646
+		;jsr debugcols	;****************************colour register ouptut debug
 		lda selparam
 		bne notSel
 		jmp menuloop
@@ -688,64 +696,30 @@ fullsave
 		
 mainmenu
 		jsr printtop
-		#prints mpal1
-		#prints mpal2
-		#prints mpal3
+		jsr printpal
 		#prints menu
-		#prints menu2
 		#scron
 mainmenuloop		
 		lda 197
 		cmp #key_none
 		beq mainmenuloop
-		cmp #key_p
+		cmp #key_c
 		beq jenteredit
 		cmp #key_d
-		beq setforcomp
-		cmp #key_e
-		beq setforrgsb
-		cmp #key_f
-		beq setforrgb
-		
+		beq dodefpal
+		cmp #key_i
+		beq jshowmanual
 		jmp mainmenuloop
 jenteredit
 		jmp enteredit
-setforcomp
-		ldx #15
--		ldy DefaultPaletteYPbPrLo,x
-		sty collow
-		ldy DefaultPaletteYPbPrHi,x
-		sty colhigh
-		jsr upload
-		dex
-		bpl -
-		lda #0
-		sta outputmode
-		jmp applydefault
-setforrgsb
-		lda DefaultPaletteRGsBHi
-		and #127
-		sta DefaultPaletteRGsBHi
-		lda #1
-		jmp completergb
-setforrgb
-		lda DefaultPaletteRGsBHi
-		ora #128
-		sta DefaultPaletteRGsBHi
-		lda #2
-completergb
-		sta outputmode
-		ldx #15
--		ldy DefaultPaletteRGsBLo,x
-		sty collow
-		ldy DefaultPaletteRGsBHi,x
-		sty colhigh
-		jsr upload
-		dex
-		bpl -		
-applydefault
+jshowmanual
+		jsr showmanual
+		#scroff
+		jmp mainmenu
+dodefpal
+		jsr dodefaults
 
-		
+		#scron
 		#prints stf
 		jsr waitrel
 -		lda 197
@@ -808,6 +782,50 @@ charcol
 		.binary test_image,$1f42		
 .include "tables.asm"
 .include "text.asm"		
+
+showmanual
+		#scroff
+		jsr printtop
+		#prints manual1
+		#prints manual2
+		#prints manual3
+		
+		#prints paktc
+		#scron
+		jsr waitkey
+		jsr waitrel
+		#scroff
+		jsr printtop
+		#prints manual4
+		#prints manual5
+		#prints manual6
+		#prints manual7
+		#prints paktc
+		#scron
+		jsr waitkey
+		jsr waitrel
+		#scroff
+		jsr printtop
+		#prints manual8
+		#prints manual9
+		#prints manualA
+		#prints paktc
+		#scron
+		jsr waitkey
+		jsr waitrel
+		#scroff
+		jsr printtop
+		#prints manualB
+		#prints manualC
+		#prints paktc
+		#scron
+		jsr waitkey
+		jsr waitrel
+		rts
+
+.include "defpal.asm"
+
+;.include "coldebug.asm"	;****************************colour register ouptut debug
 
 ;**************
 ;Misc variables

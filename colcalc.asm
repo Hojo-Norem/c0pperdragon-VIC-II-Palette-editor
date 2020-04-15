@@ -42,9 +42,15 @@ norm_sat
 ;			two pre-calculated tables which holds all the 5bit permutations of
 ;			"(Luma+brightness)*contrast+screen".
 ;			Expects - X = colour index to calculate
+;					  If DefPalMode is nonzero then calculations are skipped
+;					  and colour data is pulled from default table and converted to
+;					  FP and re-scaled back to YUV
 ;			Returns - Calculated Y in temp2, calculated U & V in FPTempU and FPTempV
 ;			Trashes - A,Y and a lot more.
-CalcCol	txa
+CalcCol	lda defpalmode
+		beq +
+		jmp ccdodefcol
++		txa
 		sta temp1
 		bne itsnotblack
 		lda #0
@@ -88,16 +94,29 @@ sintab	ldy #>colsin
 		#FACMULM fsatura
 		#FACMULM fcontra
 		#STFACM FPtempV
-		lda hanover
-		bne +
-		jmp nohanover
-+		cmp #1
-		beq +
-		jmp dohaneven
-+		#ldfacm fptempu
+		jmp +
+ccdodefcol
+		jsr dodefcol
++		lda hanover
+		bne noscale	; skip YPbPR scaling if doing hanover bars
+		jsr scaletoYPbPr
+noscale	
+
+		ldx temp1
+		rts
+
+
+dooddhanover
+		;pha
+		;lda #10
+		;sta 646
+		;pla
+		#ldfacm fptempu
+		;#printfac
 		#facmulm odd_cos
 		#stfacm fptemp1
 		#ldfacm fptempv
+		;#printfac
 		#facmulm odd_sin
 		#stfacm fptemp2
 		#ldfacw -1
@@ -115,14 +134,16 @@ sintab	ldy #>colsin
 		#facaddm fptemp1
 		#stfacm fptempv	
 		#cpfp fptemp3, fptempu
-		jmp noscale
-dohaneven
-		cmp #3
-		beq noscale
+		rts
+		
+doevenhanover
+
 		#ldfacm fptempu
+		;#printfac
 		#facmulm odd_cos
 		#stfacm fptemp1
 		#ldfacm fptempv
+		;#printfac
 		#facmulm odd_sin
 		#facsubm fptemp1
 		#stfacm fptemp2
@@ -135,13 +156,8 @@ dohaneven
 		#facaddm fptemp1
 		#stfacm fptempv		
 		#cpfp fptemp2, fptempu
-		jmp noscale
-nohanover
-		jsr scaletoYPbPr
-noscale	ldx temp1
 		rts
-
-
+		
 scaletoYPbPr
 		;do U -> Pb scaling
 		#LDFACM FPScalePb
@@ -298,7 +314,7 @@ fullcalc
 usenew	ldx #0
 		stx tabin
 calcfulltable
-		lda #3
+		lda #1
 		sta hanover
 mixtab1	lda $c000,x
 		bne +
@@ -309,14 +325,18 @@ mixtab1	lda $c000,x
 		asl
 		asl
 		sta tempreg
+		pha
+		lda defpalmode
+		bne +
 		jsr getparams
++		pla
 		jsr calccol
+		;jsr dooddhanover
 		lda temp2
 		sta tempy
 		#cpfp fptempu, fptempu2
 		#cpfp fptempv, fptempv2
-		lda #2			
-		sta hanover		
+	
 		ldx tabin
 		inx
 mixtab2	lda $c000,x
@@ -325,8 +345,13 @@ mixtab2	lda $c000,x
 		tax
 		ora tempreg
 		sta tempreg
+		pha
+		lda defpalmode
+		bne +
 		jsr getparams		
-		jsr calccol	
++		pla
+		jsr calccol
+		jsr doevenhanover
 		jsr dodivs
 		jsr scaletoYPbPr
 		lda outputmode
@@ -411,9 +436,7 @@ doRGBconv
 		tya
 		pha
 		lda temp2		;|shift Y compnent up to 8 bits
-		asl
-		asl
-		asl
+		jsr upscale
 		tay
 		#LDFACY			;Make it a floating point number
 		#STFACM	fptemp2

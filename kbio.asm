@@ -23,6 +23,8 @@ waitrel
 		key_none = 64
 		key_0 = 35
 		key_1 = 56
+		key_2 = 59
+		key_3 = 8
 		key_8 = 27
 		key_9 = 32
 		key_b = 28
@@ -40,6 +42,7 @@ waitrel
 		key_o = 38
 		key_f = 21
 		key_p = 41
+		key_i = 33
 		key_plus = 40
 		key_minus = 43
 ;******* The following snippet was borrowed without shame from codebase64.org ********

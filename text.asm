@@ -24,7 +24,7 @@ Title3	.text c_black,"           john moore",13,13,13
 		.text c_white," PLEASE TOGGLE YOUR OUTPUT MODE SWITCH",13
 		.text "  AND THEN PRESS  ANY KEY TO CONTINUE",0
 
-ChLuma1	.text 13,c_grey3,"Press a key for ",c_red,"N",c_grey3,"ew or ",c_red,"O",c_grey3,"ld luma groups.",13
+ChLuma1	.text 13,c_grey3,"Press a key for ",c_red,"N",c_grey3,"ew or ",c_red,"O",c_grey3,"ld luma levels.",13
 		.text "Groupings determine luma distribution",13
 		.text "and colour mixing ability.",13,13,13
 	
@@ -49,14 +49,92 @@ MPal3	.text c_orange,c_revs_on," 08 ",c_revs_off," ",c_brown,c_revs_on," 09 ",c_
 		.text c_orange,c_revs_on,"    ",c_revs_off," ",c_brown,c_revs_on,"    ",c_revs_off," ",c_lt_red,c_revs_on,"    ",c_revs_off," ",c_grey1,c_revs_on,"    ",c_revs_off," ",c_grey2,c_revs_on,"    ",c_revs_off," ",c_lt_green,c_revs_on,"    ",c_revs_off," ",c_lt_blue,c_revs_on,"    ",c_revs_off," ",c_grey3,c_revs_on,"    ",c_revs_off,13,13,0		
 
 menu	.text 13,c_grey3,"   Please select from the following:",13,13
-		.text "             ",c_red,"P",c_grey3,"alette editor",13,13
-		.text " Apply firmware ",c_red,"d",c_grey3,"efault palette (",c_lt_green,"Y",c_lt_blue,"Pb",c_lt_red,"Pr",c_grey3,")",13,13
-		.text " Apply firmware d",c_red,"e",c_grey3,"fault palette (",c_lt_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_grey3,")",13,13,0
-menu2	.text " Apply firmware de",c_red,"f",c_grey3,"ault palette (",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey1,"ns",c_grey3,")",13
-		.text c_grey2,"  (SDTV mode only, sync signal needed)",13,13,0
+		.text c_red,"          I",c_grey3,"nstruction manual",13,13  
+		.text "Apply ",c_red,"c",c_grey3,"olodore palette and enter editor",13,13
+		;.text "             ",c_red,"P",c_grey3,"alette editor",13,13
+		.text "    Apply firmware ",c_red,"d",c_grey3,"efault palette",13,13,0
 
-		
-stf		.text "      Save palette to flash? (",c_red,"Y",c_grey3,"/",c_red,"N",c_grey3,")",13,0
+defpalmenu	  
+		.text 13,c_grey3,"       Please select output mode:",13,13
+		.text c_red,"     1",c_grey3,": ",c_lt_green,"Y",c_lt_blue,"Pb",c_lt_red,"Pr",c_red,"   2",c_grey3,": ",c_lt_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_red,"   3",c_grey3,": ",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey1,"ns",c_grey3,13,13,0
+defpalluma    ;0123456789012345678901234567890123456789
+		.text "Please select ",c_red,"n",c_grey3,"ew or ",c_red,"o",c_grey3,"ld luma mix table.",13,0
+
+
+manual1		  
+		.text c_grey3,13,"This application is designed for use",13
+		.text "with c0pperdragon's FPGA video enhance-",13
+		.text "ment.  Operation with the 'A-Video' FPGA"
+		.text "board is possible, however a mode select"
+		.text "switch must be attached to GPIO2.",13,0
+manual2	.text "All available keyboard options are ",c_red,"high-"
+		.text "lighted",c_grey3,".",13,13
+		.text "Palettes cannot be re-downloaded from",13
+		.text "the FPGA.  It is advisable to save your",13
+		.text "palette to tape or disk before leaving",13
+		.text "the editor.  Palettes can be loaded back"
+		.text "into the editor ",0
+manual3	                .text "for further editing or",13
+		.text "can be loaded from the BASIC prompt.  To"
+		.text "ensure correct loading from BASIC, do",13
+		.text "not append '",c_yellow,",1",c_grey3,"' to the command.  Some",13
+		.text "DOS wedges do this automatically and",13
+		.text "require manual typing of the command.",13,13,0
+manual4
+		.text c_yellow,"  -Information on video output modes-",13,13,c_grey3
+		.text "'",c_lt_green,"Y",c_lt_blue,"Pb",c_lt_red,"Pr",c_grey3,"' is TV standard component video.",13
+		.text "It can operate in standard, double scan,"
+		.text "and double scan with scanline emulation."
+		.text "Some displays are not compatible with",13
+		.text "standard scan.",13,0
+manual5
+		.text "'",c_lt_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_grey3,"' is ",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey3," video with sync on green",13
+		.text " and uses the same connections as ",c_lt_green,"Y",c_lt_blue,"Pb",c_lt_red,"Pr",c_grey3,"."
+		.text "It is compatible with standard and",13
+		.text "double scan, but scanline emulation will"
+		.text "not function correctly.",13,0
+manual6 	  ;0123456789012345678901234567890123456789
+		.text "'",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey1,"ns",c_grey3,"' is ",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey3," video with sync disabled."
+		.text "In this mode the FPGA does add a sync",13
+		.text "signal to the green signal.  In order to"
+		.text "produce an image, sync must be taken",13
+		.text "from the luma or composite video pins on",0
+manual7	.text "the C64's AV socket.  This mode is only",13
+		.text "compatible with standard scan.  If",13
+		.text "double scan is selected then the FPGA",13
+		.text "will revert back to ",c_lt_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_grey3," output.",13,0
+manual8 	
+		.text c_grey3,13,"Palette files saved in one output mode",13
+		.text "can be re-loaded into the editor and",13
+		.text "switched between the different output",13
+		.text "modes. Due to the calculations involved,"
+		.text "switching between ",c_lt_green,"Y",c_lt_blue,"Pb",c_lt_red,"Pr",c_grey3," and ",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey3," may pro-"
+		.text "duce differing outputs for identical",13
+		.text "settings.",13,13,0
+manual9 .text "If you have a reset button, using it on",13
+		.text "any screen other than the test screen or"
+		.text "the post-flash screen may lead to the",13
+		.text "GUI colours being left in memory.",13,13
+		.text "It is recommended that you power-cycle",13
+		.text "your C64 once done with the editor as",13
+		.text "there is some ",0
+manualA .text "software that can acciden-"
+		.text "tally manipulate the FPGA colour",13
+		.text "registers if they remain unlocked.",13,13,0
+manualB	      ;0123456789012345678901234567890123456789	
+		.text c_grey3,13,"Final note:",13,13
+		.text "Early revision VIC-IIs have three disti-"
+		.text "nct brightness levels not including",13
+		.text "black and white, while all other VIC-IIs"
+		.text "have seven.  These are referred to here",13
+		.text "as 'lumas'.  With the PAL video system",13,0
+manualC	.text "colours of the same luma placed on alte-"
+		.text "nate vertical lines will mix and create",13
+		.text "new colours.  The editor uses features",13
+		.text "of the FPGA to simulate this effect.",13,13
+		.text "Don't be afraid to experiment!",13,13,0
+paktc	.text c_white,"PRESS ANY KEY TO CONTINUE",c_grey3,0		
+stf		.text 13,c_grey3,"     Save palette to flash?  (",c_red,"Y",c_grey3,"/",c_red,"N",c_grey3,")",13,0
 		
 PreClk	.text c_grey2," Pre-calculating and applying defaults",13,c_up,0
 

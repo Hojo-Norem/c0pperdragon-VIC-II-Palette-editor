@@ -42,7 +42,7 @@ DHB		ora #0				;Logical OR with above (.YYYYYBB)
 		sta colreghigh		;Store to temp high col register
 		rts
 		
-setsync						;setsynx assumes X = colour index and A = hi colour register
+setsync						;setsync assumes X = colour index and A = hi colour register
 		cpx #0				;are we dealing with colour index 0?
 		bne +				;if not, skip ahead
 		ldy outputmode		;get videomode

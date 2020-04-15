@@ -3,7 +3,6 @@
 ;****************************************************
 
 PreCalc
-		jsr initmultables	;initialise the tables for the fast FP multiplication routines
 		lda #1
 		sta spren
 		;Set default values
@@ -16,22 +15,11 @@ PreCalc
 		sta currcol
 		ldx #0
 		stx selparam
-		;make odd_cos and odd_sin
-		;according to the JS source at colorore.com, 'odd' = 360/16,
-		;the same as 'sector' at pepto.de/projects/colorvic/
-		;odd_cos = cos( (odd * PI) / 180 );
-		;odd_sin = sin( (odd * PI) / 180 );
-		#ldfacm sector
-		#facmulm pi
-		#stfacm fptemp1
-		#ldfacb 180
-		#facdivm fptemp1
-		#stfacm fptemp1
-		jsr cos
-		#stfacm odd_cos
-		#ldfacm fptemp1
-		jsr sin
-		#stfacm odd_sin
+		;make UBias and VBias from theri text strings
+		#ldfact UBias
+		#stfacm UBias
+		#ldfact VBias
+		#stfacm VBias
 		;origin (sector / 2)
 		#ldfacb 2
 		#facdivm sector
@@ -78,4 +66,23 @@ deftrig	jsr dotrig
 		sta full_upload
 		lda #0
 		sta spren
+		rts
+
+hanpre
+		;make odd_cos and odd_sin, used for hanover bar calculation
+		;according to the JS source at colorore.com, 'odd' = 360/16,
+		;the same as 'sector' at pepto.de/projects/colorvic/
+		;odd_cos = cos( (odd * PI) / 180 );
+		;odd_sin = sin( (odd * PI) / 180 );
+		#ldfacm sector
+		#facmulm pi
+		#stfacm fptemp1
+		#ldfacb 180
+		#facdivm fptemp1
+		#stfacm fptemp1
+		jsr cos
+		#stfacm odd_cos
+		#ldfacm fptemp1
+		jsr sin
+		#stfacm odd_sin
 		rts

@@ -5,10 +5,7 @@ DefaultPaletteYPbPrLo
 		.byte 16,    16,      184,     11,     182,     132,     78,     17,     117,     114,     184,     16,     16,     12,     70,     16    
 DefaultPaletteYPbPrHi
 		.byte     2,     126,      41,     78,      50,      65,     35,     93,      49,      33,      65,     42,     62,     93,     63,     78
-DefaultPaletteRGsBLo
-		.byte 33,    255,      150,     77,     53,     224,      38,     217,      20,     11,     220,     10,     48,     210,      225,     84    
-DefaultPaletteRGsBHi
-		.byte    4,      127,      20,     90,     22,      105,     23,      101,     40,     32,      45,     37,     62,      117,      75,     78
+
 	;precalculated Y (luma) table
 	; new lumas
 Lumas;	.byte 0,255,79,159,95,127,63,191,95,63,127,79,119,191,119,159
@@ -108,6 +105,9 @@ guipalrgb		.byte 31,0
 Sector		.byte 133,52,0,0,0
 radian		.byte 123,14,250,53,15
 screen		.byte 126,76,204,204,205
+
+UBias		.ptext "1.10"
+VBias		.ptext "1.10"
 
 FP0			.fill 5,0
 FPm128		.byte 136,128,0,0,0
