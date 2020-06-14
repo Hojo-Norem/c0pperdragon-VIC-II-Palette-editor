@@ -5,7 +5,7 @@ The editor is a single load and so should be compatible with practically every w
 
 The editor has it's own default palette, based on the 'colodore' algorithm by pepto (www.pepto.de/projects/colorvic/).  This palette is a very close approximation of 'the' average PAL C64.  Using familiar controls, one can adjust this default with a great amount of flexibility.  All colours can be adjusted simultaneously as if you were adjusting a television, or individual colours can be tweaked.
 
-All modes can be switched between YPbPr and two forms of RGB.
+All modes can be switched between component (YPbPr), RGB with sync-on-green (RGsB) and RGB without sync (RGBns).  RGBns requires sync to be sourced from elsewhere.  The luma output at the C64's A/V socket is probably the best and most compatible.
 
 Thanks to c0pperdragon's receptiveness during the mod's development, functionality in the firmware exists to simulate delay line 'luma' mixing that PAL users have been able to enjoy.  This side effect of the PAL decoding scheme allows clever graphicians the means to squeeze a few extra colours out of the VIC-II.  The editor does the needed calculations to generate the colours that will be displayed when colour mixing is used.  These calculations are performed by the editor in all modes and for the default palettes.  An added bonus is that NTSC users will be able to see one of the things that they have been missing out on...
 
