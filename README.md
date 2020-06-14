@@ -1,7 +1,7 @@
 # c0pperdragon-VIC-II-Palette-editor
 This editor allows one to load, save and edit custom palettes for c0pperdragon's (https://github.com/c0pperdragon) C64-Video-Enhancement (https://github.com/c0pperdragon/C64-Video-Enhancement) FPGA mod for the Commodore 64.  The editor also handles the uploading and flashing of the palette to the FPGA's memory.  The editor has a decoded version of the FPGA firmware's default palette in the event that you ever want to revert back to it.
 
-The editor is a single load and so should be compatible with practically every way of getting software onto your C64.  The load and save routines are compatible with tape and any CBM compatible device on number 8, 9 ,10 or 11.  Only KERNAL routines are used, so any device that pretends to be CBM compatible should work but is neither guaranteed nor supported.  It is up to your devive vendor to ensure CBM compatibility.
+The editor is a single load and so should be compatible with practically every way of getting software onto your C64.  The load and save routines are compatible with tape and any CBM compatible device on number 8, 9 ,10 or 11.  Only KERNAL routines are used, so any device that pretends to be CBM compatible should work but is neither guaranteed nor supported.  It is up to your device vendor to ensure CBM compatibility.
 
 The editor has it's own default palette, based on the 'colodore' algorithm by pepto (www.pepto.de/projects/colorvic/).  This palette is a very close approximation of 'the' average PAL C64.  Using familiar controls, one can adjust this default with a great amount of flexibility.  All colours can be adjusted simultaneously as if you were adjusting a television, or individual colours can be tweaked.
 
