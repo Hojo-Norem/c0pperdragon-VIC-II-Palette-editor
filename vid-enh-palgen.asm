@@ -102,6 +102,10 @@
 						Added a built-in instruction manual of a sort.  As user controls are already clearly marked on screen, this manual more explains the quirks of the editor and the FPGA mod in general.
 						Dropped pucrunch from the main build.  Unless you want to load the editor from tape or disk without a fastloader then there isn't really a need for it in 2020... 
 						
+						(2020/06/14 - v1.18)
+						Hopefully fixed a bug for NTSC users where one could not proceed past the luma selection screen.  I don't have a NTSC machine, so I had to do my testing in VICE.
+						Partly for my own amusement and partly to lay the foundation for a more fateful representation of 8595 VIC-II delay line mixing, there is now a 'Mix them ALL!' luma mixing mode.
+						
 		 Some info:
 						The mod uses 16 bit entries for its palette.  The editor stores them as separate low/high byte arrays.
 							
@@ -230,7 +234,7 @@ wait 	cmp $d012
 		bne wait
 		lda #106
 		sta irq1raster+1
-		lda #255
+		lda #245
 		sta irq2raster+1
 		jsr irqinit
 		#scron
@@ -458,19 +462,22 @@ cpyparams
 changemix
 		jsr waitrel
 		lda active_luma
-		bne +++
+		bne oldonly
 		lda mix_luma
-		beq +
+		bpl +
 		lda #0
+		jmp +++
++		beq +
+		lda #255
 		jmp ++
 +		lda #16
 +		sta mix_luma
 		jsr dispmix
 		lda fullcalculation
-		bne +
+		bne oldonly
 		lda #17
 		sta fullcalculation
-+		rts
+oldonly	rts
 				
 
 .align 256,255
@@ -541,13 +548,17 @@ drawwhite
 
 dispmix
 		lda active_luma
-		bne ++
+		bne dontprintforold
 		lda mix_luma
 		bne +
 		#printtat lumamodenew,#0,#readouty+8
-		jmp ++
-+		#printtat lumamodemix,#0,#readouty+8
-+		rts
+		jmp dontprintforold
++		bmi +
+		#printtat lumamodemix,#0,#readouty+8
+		jmp dontprintforold
++		#printtat lumamodeall,#0,#readouty+8
+dontprintforold
+		rts
 
 	
 drawselcol

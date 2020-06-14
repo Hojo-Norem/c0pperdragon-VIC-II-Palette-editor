@@ -6,7 +6,7 @@ alltxt	.text "All",0
 		
 top1 	.text c_clear,c_white,176
 		.fill 37,96
-		.text 174,13,125,"        ",c_lt_green,"C64 Video Enhancement       ",c_white," ",125,13,173
+		.text 174,13,125,"     ",c_lt_green,"C64 Video Enhancement  v1.18   ",c_white," ",125,13,173
 		.fill 37,96
 		.text 189,13,0
 		
@@ -153,9 +153,11 @@ footer	.text c_grey3," "
 		.text 13,c_grey3,"     Highlighted character selects.",13,13,"         Use ",c_red,"+",c_grey3," and ",c_red,"-",c_grey3," to adjust.",0
 
 lumamodenew
-		.text c_grey3,"     ",c_red,"L",c_grey3,"uma mixing table:  ",c_lt_green,"New",c_white," lumas",0
+		.text c_grey3,"     ",c_red,"L",c_grey3,"uma mixing table:  ",c_lt_green,"New",c_white," lumas    ",0
 lumamodemix
 		.text c_grey3,"     ",c_red,"L",c_grey3,"uma mixing table:  ",c_lt_green,"Old",c_white," lumas",0
+lumamodeall
+		.text c_grey3,"     ",c_red,"L",c_grey3,"uma mixing table:  Mix them ",c_cyan,"ALL",c_grey3,"!",0
 		
 YPbPr	.text c_red,"V",c_grey3,"ideo output mode:  ",c_lt_green,"Y",c_lt_blue,"Pb",c_red,"Pr",0
 RGsB	.text c_red,"V",c_grey3,"ideo output mode:  ",c_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",0

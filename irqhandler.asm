@@ -189,7 +189,8 @@ SetIRQ  sei
 		rts
 
 		
-IRQInit and $d011
+IRQInit lda #127
+		and $d011
 		sta $d011
 		lda #255
 		sta $d012

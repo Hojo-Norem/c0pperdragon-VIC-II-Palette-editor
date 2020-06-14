@@ -297,19 +297,33 @@ fullcalc
 		cpx #16
 		bne --
 		; select mixing table to use
-		lda #<newmix
+		lda #<newmix1
 		sta mixtab1+1
+		lda #<newmix2
 		sta mixtab2+1
-		lda #>newmix
+		lda #>newmix1
 		sta mixtab1+2
+		lda #>newmix2
 		sta mixtab2+2
 		lda mix_luma
 		beq usenew
-		lda #<oldmix
+		bpl useold
+		lda #<allmix1
 		sta mixtab1+1
+		lda #<allmix2
 		sta mixtab2+1
-		lda #>oldmix
+		lda #>allmix1
 		sta mixtab1+2
+		lda #>allmix2
+		sta mixtab2+2
+		jmp usenew		
+useold	lda #<oldmix1
+		sta mixtab1+1
+		lda #<oldmix2
+		sta mixtab2+1
+		lda #>oldmix1
+		sta mixtab1+2
+		lda #>oldmix2
 		sta mixtab2+2		
 usenew	ldx #0
 		stx tabin
@@ -317,7 +331,7 @@ calcfulltable
 		lda #1
 		sta hanover
 mixtab1	lda $c000,x
-		bne +
+		bpl +
 		jmp donetable
 +		tax
 		asl
@@ -338,7 +352,6 @@ mixtab1	lda $c000,x
 		#cpfp fptempv, fptempv2
 	
 		ldx tabin
-		inx
 mixtab2	lda $c000,x
 		inx
 		stx tabin
@@ -379,6 +392,7 @@ mixtab2	lda $c000,x
 		sta fullpaleveh,y		
 		jsr spinsprite	
 		ldx tabin
+		beq donetable
 		jmp calcfulltable
 donetable		
 		ldy currcol
@@ -426,6 +440,7 @@ skipmixcalc
 		sta fullcalculation
 		sta spren
 		rts
+		
 
 		;R = Y + (1.402 * Pr)
 		;G = (Y - (0.344 * Pb)) - (0.714 * Pr)
