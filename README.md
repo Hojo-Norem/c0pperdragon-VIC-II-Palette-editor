@@ -1,8 +1,19 @@
 # c0pperdragon-VIC-II-Palette-editor
-A C64 based palette editor for c0pperdragon's (https://github.com/c0pperdragon) C64-Video-Enhancement (https://github.com/c0pperdragon/C64-Video-Enhancement) project
-		
-Palette generator based on the 'colodore' algorithm by pepto
-www.pepto.de/projects/colorvic/
+This editor allows one to load, save and edit custom palettes for c0pperdragon's (https://github.com/c0pperdragon) C64-Video-Enhancement (https://github.com/c0pperdragon/C64-Video-Enhancement) FPGA mod for the Commodore 64.  The editor also handles the uploading and flashing of the palette to the FPGA's memory.  The editor has a decoded version of the FPGA firmware's default palette in the event that you ever want to revert back to it.
+
+The editor is a single load and so should be compatible with practically every way of getting software onto your C64.  The load and save routines are compatible with tape and any CBM compatible device on number 8, 9 ,10 or 11.  Only KERNAL routines are used, so any device that pretends to be CBM compatible should work but is neither guaranteed nor supported.  It is up to your devive vendor to ensure CBM compatibility.
+
+The editor has it's own default palette, based on the 'colodore' algorithm by pepto (www.pepto.de/projects/colorvic/).  This palette is a very close approximation of 'the' average PAL C64.  Using familiar controls, one can adjust this default with a great amount of flexibility.  All colours can be adjusted simultaneously as if you were adjusting a television, or individual colours can be tweaked.
+
+All modes can be switched between YPbPr and two forms of RGB.
+
+Thanks to c0pperdragon's receptiveness during the mod's development, functionality in the firmware exists to simulate delay line 'luma' mixing that PAL users have been able to enjoy.  This side effect of the PAL decoding scheme allows clever graphicians the means to squeeze a few extra colours out of the VIC-II.  The editor does the needed calculations to generate the colours that will be displayed when colour mixing is used.  These calculations are performed by the editor in all modes and for the default palettes.  An added bonus is that NTSC users will be able to see one of the things that they have been missing out on...
+
+The smaller number of luma levels produced by the very early VIC-IIs is also taken into account and the editor will adjust the colour mixing appropriately.  When using the new VIC-II luma levels, the editor provides the option to override the colour mixing tables with that of the old VIC-II lumas.  This will produce more colour mix combinations at the cost of a ever-so-slight reduction in 'authenticity'. 
+
+## What's done in v1.18
+* Hopefully fixed a bug for NTSC users where one could not proceed past the luma selection screen.  I don't have a NTSC machine, so I had to do my testing in VICE.
+* Partly for my own amusement and partly to lay the foundation for a more fateful representation of 8565 VIC-II delay line mixing, there is now a 'Mix them ALL!' luma mixing mode.  Interesting effects can be seen in some demos...
 
 ## What's done in v1.17
 * Re-worked the firmware default palette section.
@@ -18,10 +29,10 @@ Unless you want to load the editor from tape or disk without a fastloader then t
 ## What's done in v1.16
 * Small fix / tweak to the colourmix calculations.  Some improvements to accuracy.
 
-It is worth noting that the default palette settings are not perfect by far. (EDIT: That's the editor's default.)  After using them for a while I found that boosting the brightness on Yellow and Lt.Green a visible notch, shifting the hue of yellow and brown a notch and taking brown's saturation down a notch not only made for a more faithful colour reproduction to my eyes (done by quickly flicking between component and S-Video using a Extron DVS 204) but coupled with the above tweaks to the mixing algo the resulting colourmixes seem more faithful.  An example of such a palette will be included with the sources and binary realeases.
+It is worth noting that the default palette settings are not perfect by far. (EDIT: That's the editor's default.)  After using them for a while I found that boosting the brightness on Yellow and Lt.Green a visible notch, shifting the hue of yellow and brown a notch and taking brown's saturation down a notch not only made for a more faithful colour reproduction to my eyes (done by quickly flicking between component and S-Video using a Extron DVS 204) but coupled with the above tweaks to the mixing algo the resulting colourmixes seem more faithful.  An example of such a palette will be included with the sources and binary releases.
 ## What's done in v1.15
-* Setting a default palette also sets the corrisponding video mode if the palette editor is chosen afterward.
-* Added RGB GUI palette.  Switched appropiately on video mode change.
+* Setting a default palette also sets the corresponding video mode if the palette editor is chosen afterward.
+* Added RGB GUI palette.  Switched appropriately on video mode change.
 * I broke the colour mixing routine in the previous version.  Fixed.
 
 ## What's done in v1.1
@@ -72,6 +83,6 @@ Either download the latest version from the releases section or download the sou
 
 **'make_full.bat'** calls **'make_uploader.bat'** and then **'make_main.bat'** followed by **pucrunch**.  If you do not want to bother with the final compression, manually calling **'make_uploader.bat'** and then **'make_main.bat'** will suffice.  **'make_uploader.bat'** only needs to be called one time and only again if you modify **uploader.asm**.
 
-Please note:  **uploader.asm** is coded so it's data structures align with those of **vid-enh-palgen.asm** on the 256 byte alignemt.  This is so **vid-enh-palgen.asm** can write **uploader.asm** to storage along with the current palette and settings.
+Please note:  **uploader.asm** is coded so it's data structures align with those of **vid-enh-palgen.asm** on the 256 byte alignment.  This is so **vid-enh-palgen.asm** can write **uploader.asm** to storage along with the current palette and settings.
 						
 		
