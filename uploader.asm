@@ -50,6 +50,8 @@ uploader
 		sta 53281
 		lda #23
 		sta 53272
+		lda #$40      ; Reset BeamRacer so that it drops off the bus and makes
+		sta $d02e     ; VideoMod registers accessible. Harmless if BeamRacer not present
 		lda #unlock
 		sta control
 		#prints top1

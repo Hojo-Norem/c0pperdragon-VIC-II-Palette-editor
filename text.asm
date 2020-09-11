@@ -6,7 +6,7 @@ alltxt	.text "All",0
 		
 top1 	.text c_clear,c_white,176
 		.fill 37,96
-		.text 174,13,125,"     ",c_lt_green,"C64 Video Enhancement  v1.18   ",c_white," ",125,13,173
+		.text 174,13,125,"     ",c_lt_green,"C64 Video Enhancement  v1.19   ",c_white," ",125,13,173
 		.fill 37,96
 		.text 189,13,0
 		
@@ -19,10 +19,17 @@ Title1	.text c_lt_green,"       Palette adjustment utility",13,13
 Title2	.text c_grey2,"    www.pepto.de/projects/colorvic/",13,13
 		.text c_yellow,"             Utility coding",13
 		.text "           *2019*  Hojo Norem",13
-		.text c_grey2,"         github.com/Hojo-Norem",13,0
-Title3	.text c_black,"           john moore",13,13,13	
-		.text c_white," PLEASE TOGGLE YOUR OUTPUT MODE SWITCH",13
+		.text c_grey2,"         github.com/Hojo-Norem",13
+		.text c_black,"           john moore",13,0	
+Title3BR	  ;0123456789012345678901234567890123456789
+		.text c_lt_green,"    ** Active BeamRacer expansion **",13
+		.text "** detected and successfully disabled **",c_up,c_up,c_up
+Title3	.text 13,13,13,c_white," PLEASE TOGGLE YOUR OUTPUT MODE SWITCH",13
 		.text "  AND THEN PRESS  ANY KEY TO CONTINUE",0
+		      ;0123456789012345678901234567890123456789
+brerror	.text c_clear,13,13,13,c_red,"  Error disabling BeamRacer expansion!",13,13,13,13
+		.text c_grey3,"Unable to continue.  Please power-cycle",13
+		.text "      your computer and try again.",0
 
 ChLuma1	.text 13,c_grey3,"Press a key for ",c_red,"N",c_grey3,"ew or ",c_red,"O",c_grey3,"ld luma levels.",13
 		.text "Groupings determine luma distribution",13
@@ -57,7 +64,7 @@ menu	.text 13,c_grey3,"   Please select from the following:",13,13
 defpalmenu	  
 		.text 13,c_grey3,"       Please select output mode:",13,13
 		.text c_red,"     1",c_grey3,": ",c_lt_green,"Y",c_lt_blue,"Pb",c_lt_red,"Pr",c_red,"   2",c_grey3,": ",c_lt_red,"R",c_lt_green,"G",c_white,"s",c_lt_blue,"B",c_red,"   3",c_grey3,": ",c_lt_red,"R",c_lt_green,"G",c_lt_blue,"B",c_grey1,"ns",c_grey3,13,13,0
-defpalluma    ;0123456789012345678901234567890123456789
+defpalluma    
 		.text "Please select ",c_red,"n",c_grey3,"ew or ",c_red,"o",c_grey3,"ld luma mix table.",13,0
 
 

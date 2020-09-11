@@ -3,7 +3,7 @@
 		******************************************************************
 		*******                                                  *********
 		*******             C64 Video  Enhancement               *********
-		*******                      v1.16                       *********
+		*******                      v1.19                       *********
 		*******                 Palette Editor                   *********
 		*******                                                  *********
 		******************************************************************
@@ -162,8 +162,7 @@ PalEdit #scroff
 		sta 53281
 		sta PreCalced
 		sta outputmode
-		lda #$40      ; Reset BeamRacer so that it drops off the bus and makes
-		sta $d02e     ; VideoMod registers accessible. Harmless if BeamRacer not present
+
 		lda #23
 		sta fullcalculation
 		sta 53272
@@ -196,7 +195,7 @@ PalEdit #scroff
 		jsr printtop
 		#prints title1
 		#prints title2
-		#prints title3
+		jsr brcheck		;check for BeamRacer and print messages accordingly
 		#scron
 		lda #unlock
 		sta control	
@@ -837,6 +836,7 @@ showmanual
 		rts
 
 .include "defpal.asm"
+.include "beamracer.asm"
 
 ;.include "coldebug.asm"	;****************************colour register ouptut debug
 
