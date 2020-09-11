@@ -162,7 +162,7 @@ MPal3	.text c_orange,c_revs_on," 08 ",c_revs_off," ",c_brown,c_revs_on," 09 ",c_
 		
 		
 .align $100,255
-.include "Shared.asm"
+.include "shared.asm"
 
 printn .macro number
 
